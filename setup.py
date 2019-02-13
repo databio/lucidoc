@@ -1,6 +1,5 @@
 #! /usr/bin/env python
 
-import os
 from setuptools import setup
 import sys
 
@@ -55,7 +54,7 @@ setup(
     license="BSD2",
     entry_points={
         "console_scripts": [
-            "{p} = {p}.{p}:main".format(p=PACKAGE)
+            "{prog} = {pkg}.{prog}:main".format(pkg=PACKAGE, prog="oradoc")
         ],
     },
     include_package_data=True,
