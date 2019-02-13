@@ -115,11 +115,22 @@ def doc_callable(f):
     return res
 
 
-def _is_docable_class(obj):
-    return inspect.isclass(obj) and not obj.__name__.startswith("_")
-
-
 def _get_targets(mod):
+    """
+    Determine given module's targets for documentation.
+
+    Parameters
+    ----------
+    mod : module
+        Module for which documentation targets should be found
+
+    Returns
+    -------
+    Sequence of (str, object)
+        (Ordered) collection of pairs--in which first component is object name
+        and second is object itself--for documentation.
+
+    """
     try:
         exports = mod.__all__
     except AttributeError:
