@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # This script generates mkdocs friendly Markdown documentation from a python package.
 # It is based on the the following blog post by Christian Medina
 # https://medium.com/python-pandemonium/python-introspection-with-the-inspect-module-2c85d5aa5a48#.twcmlyack 
