@@ -5,6 +5,7 @@
 
 import argparse
 import inspect
+import itertools
 import os
 import pydoc
 import sys
@@ -73,13 +74,13 @@ def doc_class(cls):
     """
     if not isinstance(cls, type):
         raise TypeError(_type_err_message(type, cls))
+
+    def use_obj(name, _):
+        return _unprotected(name)
+
     cls_doc = [class_header.format(cls.__name__), pydoc.inspect.getdoc(cls)]
-    func_docs = [doc_callable(f) for n, f in 
-                 pydoc.inspect.getmembers(cls, pydoc.inspect.ismethod)
-                 if (_unprotected(n) or n == "__init__")]
-    subcls_docs = [doc_class(c) for n, c in
-                   inspect.getmembers(cls, inspect.isclass)
-                   if _unprotected(n)]
+    func_docs = _proc_objs(cls, doc_callable, pydoc.inspect.ismethod, use_obj)
+    subcls_docs = _proc_objs(cls, doc_class, pydoc.inspect.isclass, use_obj)
     return cls_doc + func_docs + subcls_docs
 
 
@@ -145,6 +146,33 @@ def _get_targets(mod):
         raise Exception("Module is missing declared export(s): {}".
                         format(", ".join(missing)))
     return objs
+
+
+def _proc_objs(root, proc, select=None, pred=None):
+    """
+    Process selected objects, within a "root" object, that satisfy a predicate.
+
+    Parameters
+    ----------
+    root : object
+        The object from which to select contained objects.
+    proc : function(object) -> Iterable of str
+        How to process an individual subobject
+    select : function(object) -> bool
+        How to select subobjects from the root object, optional; this is passed
+        as the predicate to inspect.getmembers
+    pred : function(str, object) -> bool
+        Additional filter for selected objects
+
+    Returns
+    -------
+    list of str
+        Collection of documentation chunks
+
+    """
+    pred = pred or (lambda _1, _2: True)
+    return list(itertools.chain(*[
+        proc(o) for n, o in inspect.getmembers(root, select) if pred(n, o)]))
 
 
 def _type_err_message(exp_type, obs_value):
