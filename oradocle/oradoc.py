@@ -3,6 +3,7 @@
 # It is based on the the following blog post by Christian Medina
 # https://medium.com/python-pandemonium/python-introspection-with-the-inspect-module-2c85d5aa5a48#.twcmlyack 
 
+import argparse
 import inspect
 import os
 import pydoc
@@ -13,7 +14,15 @@ class_header = "## Class {}"
 function_header = "### {}"
 
 
-__all__ = ["doc_class", "doc_callable", "doc_module", "get_mod_doc"]
+__all__ = ["doc_class", "doc_callable", "doc_module"]
+
+
+def _parse_args(cmdl):
+    parser = argparse.ArgumentParser(
+        description="Generate Markdown documentation for a module",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("module", help="Name/dotted path of module to document")
+    return parser.parse_args(cmdl)
 
 
 def doc_module(mod):
@@ -46,59 +55,6 @@ def doc_module(mod):
     return "\n".join(str(x) for x in output)
 
 
-def _is_docable_class(obj):
-    return inspect.isclass(obj) and not obj.__name__.startswith("_")
-
-
-def _unprotected(name):
-    return not name.startswith("_")
-
-
-def _get_targets(mod):
-    try:
-        exports = mod.__all__
-    except AttributeError:
-        return inspect.getmembers(mod)
-    objs, missing = [], []
-    for name in exports:
-        try:
-            objs.append((name, getattr(mod, name)))
-        except AttributeError:
-            missing.append(name)
-    if missing:
-        raise Exception("Module is missing declared export(s): {}".
-                        format(", ".join(missing)))
-    return objs
-
-
-def get_mod_doc(modname):
-    """
-    Generate Markdown documentation for classes and functions in a module.
-
-    Parameters
-    ----------
-    modname : str
-        The module in which to search for (unprotected) classes and functions
-        for which Markdown documentation should be generated.
-
-    Returns
-    -------
-    str
-        Large block of Markdown-formatted documentation of a module.
-
-    """
-    try:
-        sys.path.append(os.getcwd())
-        # Attempt import
-        mod = pydoc.safeimport(modname)
-        if mod is None:
-            print("Module not found")
-        # Module imported correctly, let's create the docs
-        return doc_module(mod)
-    except pydoc.ErrorDuringImport as e:
-        print("Error while trying to import module {} -- {}".format(modname, e))
-
-
 def doc_class(cls):
     """
     For single class definition, get text components for Markdown documentation.
@@ -115,8 +71,6 @@ def doc_class(cls):
         definition.
 
     """
-    # DEBUG
-    print("DOCING CLASS: {}".format(cls.__name__))
     if not isinstance(cls, type):
         raise TypeError(_type_err_message(type, cls))
     cls_doc = [class_header.format(cls.__name__), pydoc.inspect.getdoc(cls)]
@@ -161,11 +115,53 @@ def doc_callable(f):
     return res
 
 
+def _is_docable_class(obj):
+    return inspect.isclass(obj) and not obj.__name__.startswith("_")
+
+
+def _get_targets(mod):
+    try:
+        exports = mod.__all__
+    except AttributeError:
+        return inspect.getmembers(mod)
+    objs, missing = [], []
+    for name in exports:
+        try:
+            objs.append((name, getattr(mod, name)))
+        except AttributeError:
+            missing.append(name)
+    if missing:
+        raise Exception("Module is missing declared export(s): {}".
+                        format(", ".join(missing)))
+    return objs
+
+
 def _type_err_message(exp_type, obs_value):
     """ Create message for TypeError when value doesn't match expectation. """
     return "Expected {} but got {} ({})".format(
             exp_type, obs_value, type(obs_value))
 
 
+def _unprotected(name):
+    """ Determine whether object name suggests its not protected. """
+    return not name.startswith("_")
+
+
+def main():
+    """ Main workflow """
+    opts = _parse_args(sys.argv[1:])
+    modpath = opts.module
+    try:
+        sys.path.append(os.getcwd())
+        # Attempt import
+        mod = pydoc.safeimport(modpath)
+        if mod is None:
+            print("Module not found")
+        # Module imported correctly, let's create the docs
+        return doc_module(mod)
+    except pydoc.ErrorDuringImport as e:
+        print("Error while trying to import module {} -- {}".format(modpath, e))
+
+
 if __name__ == '__main__':
-    print(get_mod_doc(sys.argv[1]))
+    print(main())
