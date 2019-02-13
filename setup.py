@@ -39,7 +39,7 @@ setup(
     name=PACKAGE,
     packages=[PACKAGE],
     version=read_version("{}/_version.py".format(PACKAGE)),
-    description="A ",
+    description="API documentation in Markdown",
     long_description=long_description,
     classifiers=[
         "Development Status :: 4 - Beta",
