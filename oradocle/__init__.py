@@ -3,5 +3,6 @@
 __author__ = "Vince Reuter"
 __email__ = "vreuter@virginia.edu"
 
-from.docstryle import *
+from .docparse import *
+from .docstyle import *
 from .oradoc import *

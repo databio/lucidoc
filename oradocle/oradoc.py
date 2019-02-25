@@ -10,7 +10,8 @@ import os
 import pydoc
 import sys
 from .helpers import *
-from .docstryle import get_styler, PYCODE_KEY, STYLERS
+from .docstyle import get_styler, STYLERS
+from .docparse import get_parser
 
 
 module_header = "# Package {} Documentation\n"
@@ -22,25 +23,34 @@ __all__ = ["doc_class", "doc_callable", "doc_module"]
 
 
 def _parse_args(cmdl):
+
     parser = argparse.ArgumentParser(
         description="Generate Markdown documentation for a module",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+    # Required
     parser.add_argument(
         "module",
         help="Name/dotted path of module to document")
     parser.add_argument(
-        "-O", "--output",
-        help="Path to output file")
+        "-P", "--parser", required=True,
+        help="Name of parsing strategy for docstrings")
+
+    # Optional
     parser.add_argument(
         "--append", action="store_true",
         help="Indicate that new docs should be appended to given file")
     parser.add_argument(
-        "-S", "--style", choices=list(STYLERS.keys()), default=PYCODE_KEY,
+        "-O", "--output",
+        help="Path to output file")
+    parser.add_argument(
+        "-S", "--style", choices=list(STYLERS.keys()),
         help="Name indicating which styler to use to render docstrings")
+
     return parser.parse_args(cmdl)
 
 
-def doc_module(mod, style_docstr):
+def doc_module(mod, parse_docstr, style_docstr):
     """
     Get large block of Markdown-formatted documentation of a module
 
@@ -48,8 +58,10 @@ def doc_module(mod, style_docstr):
     ----------
     mod : module
         Module to document in Markdown.
-    style_docstr : callable
-        How to style/render a docstring
+    parse_docstr : oradocle.DocstringParser
+        How to parse a docstring.
+    style_docstr : oradocle.DocstringStyler
+        How to style/render a docstring.
 
     Returns
     -------
@@ -63,16 +75,16 @@ def doc_module(mod, style_docstr):
     targets = _get_targets(mod)
     for n, t in targets:
         if inspect.isfunction(t) and not _unprotected(n):
-            doc_chunks = doc_callable(t, style_docstr)
+            doc_chunks = doc_callable(t, parse_docstr, style_docstr)
         elif inspect.isclass(t) and _unprotected(n):
-            doc_chunks = doc_class(t, style_docstr)
+            doc_chunks = doc_class(t, parse_docstr, style_docstr)
         else:
             continue
         output.extend(doc_chunks)
     return "\n".join(str(x) for x in output)
 
 
-def doc_class(cls, style_docstr):
+def doc_class(cls, parse_docstr, style_docstr):
     """
     For single class definition, get text components for Markdown documentation.
 
@@ -80,6 +92,8 @@ def doc_class(cls, style_docstr):
     ----------
     cls : class
         Class to document with Markdown
+    parse_docstr : oradocle.DocstringParser
+        How to parse a docstring.
     style_docstr : callable
         How to style/render a docstring
 
@@ -98,14 +112,16 @@ def doc_class(cls, style_docstr):
 
     cls_doc = [class_header.format(cls.__name__),
                style_docstr(pydoc.inspect.getdoc(cls))]
-    func_docs = _proc_objs(cls, lambda f: doc_callable(f, style_docstr),
-                           pydoc.inspect.ismethod, use_obj)
-    subcls_docs = _proc_objs(cls, lambda c: doc_class(c, style_docstr),
-                             pydoc.inspect.isclass, use_obj)
+    func_docs = _proc_objs(
+        cls, lambda f: doc_callable(f, parse_docstr, style_docstr),
+        pydoc.inspect.ismethod, use_obj)
+    subcls_docs = _proc_objs(
+        cls, lambda c: doc_class(c, parse_docstr, style_docstr),
+        pydoc.inspect.isclass, use_obj)
     return cls_doc + func_docs + subcls_docs
 
 
-def doc_callable(f, style_docstr):
+def doc_callable(f, parse_docstr, style_docstr):
     """
     For single function get text components for Markdown documentation.
 
@@ -113,6 +129,8 @@ def doc_callable(f, style_docstr):
     ----------
     f : callable
         Function to document with Markdown
+    parse_docstr : oradocle.DocstringParser
+        How to parse a docstring.
     style_docstr : callable
         How to style/render a docstring
 
@@ -131,8 +149,8 @@ def doc_callable(f, style_docstr):
         n, pydoc.inspect.formatargspec(*pydoc.inspect.getargspec(f)))
 
     ds = pydoc.inspect.getdoc(f)
-    ds_parts = [style_docstr(ds)] if ds else []
-    return [head, "```python\n", signature] + ds_parts + ["```\n", "\n"]
+    return [head, "```python\n", signature] + \
+        ([style_docstr(ds)] if ds else []) + ["```\n", "\n"]
 
 
 def _get_targets(mod):
@@ -220,8 +238,9 @@ def main():
         print("Error while trying to import module {}".format(modpath))
         raise
     else:
+        parse = get_parser(opts.parse)
         style = get_styler(opts.style)
-        doc = doc_module(mod, style)
+        doc = doc_module(mod, parse, style)
         if opts.output:
             outdir = os.path.dirname(opts.output)
             if outdir and not os.path.isdir(outdir):
