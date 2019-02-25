@@ -9,6 +9,9 @@ import itertools
 import os
 import pydoc
 import sys
+from .helpers import *
+from .docstryle import get_styler, PYCODE_KEY, STYLERS
+
 
 module_header = "# Package {} Documentation\n"
 class_header = "## Class {}"
@@ -22,11 +25,22 @@ def _parse_args(cmdl):
     parser = argparse.ArgumentParser(
         description="Generate Markdown documentation for a module",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("module", help="Name/dotted path of module to document")
+    parser.add_argument(
+        "module",
+        help="Name/dotted path of module to document")
+    parser.add_argument(
+        "-O", "--output",
+        help="Path to output file")
+    parser.add_argument(
+        "--append", action="store_true",
+        help="Indicate that new docs should be appended to given file")
+    parser.add_argument(
+        "-S", "--style", choices=list(STYLERS.keys()), default=PYCODE_KEY,
+        help="Name indicating which styler to use to render docstrings")
     return parser.parse_args(cmdl)
 
 
-def doc_module(mod):
+def doc_module(mod, style_docstr):
     """
     Get large block of Markdown-formatted documentation of a module
 
@@ -34,6 +48,8 @@ def doc_module(mod):
     ----------
     mod : module
         Module to document in Markdown.
+    style_docstr : callable
+        How to style/render a docstring
 
     Returns
     -------
@@ -47,16 +63,16 @@ def doc_module(mod):
     targets = _get_targets(mod)
     for n, t in targets:
         if inspect.isfunction(t) and not _unprotected(n):
-            doc_chunks = doc_callable(t)
+            doc_chunks = doc_callable(t, style_docstr)
         elif inspect.isclass(t) and _unprotected(n):
-            doc_chunks = doc_class(t)
+            doc_chunks = doc_class(t, style_docstr)
         else:
             continue
         output.extend(doc_chunks)
     return "\n".join(str(x) for x in output)
 
 
-def doc_class(cls):
+def doc_class(cls, style_docstr):
     """
     For single class definition, get text components for Markdown documentation.
 
@@ -64,6 +80,8 @@ def doc_class(cls):
     ----------
     cls : class
         Class to document with Markdown
+    style_docstr : callable
+        How to style/render a docstring
 
     Returns
     -------
@@ -78,13 +96,16 @@ def doc_class(cls):
     def use_obj(name, _):
         return _unprotected(name)
 
-    cls_doc = [class_header.format(cls.__name__), pydoc.inspect.getdoc(cls)]
-    func_docs = _proc_objs(cls, doc_callable, pydoc.inspect.ismethod, use_obj)
-    subcls_docs = _proc_objs(cls, doc_class, pydoc.inspect.isclass, use_obj)
+    cls_doc = [class_header.format(cls.__name__),
+               style_docstr(pydoc.inspect.getdoc(cls))]
+    func_docs = _proc_objs(cls, lambda f: doc_callable(f, style_docstr),
+                           pydoc.inspect.ismethod, use_obj)
+    subcls_docs = _proc_objs(cls, lambda c: doc_class(c, style_docstr),
+                             pydoc.inspect.isclass, use_obj)
     return cls_doc + func_docs + subcls_docs
 
 
-def doc_callable(f):
+def doc_callable(f, style_docstr):
     """
     For single function get text components for Markdown documentation.
 
@@ -92,6 +113,8 @@ def doc_callable(f):
     ----------
     f : callable
         Function to document with Markdown
+    style_docstr : callable
+        How to style/render a docstring
 
     Returns
     -------
@@ -99,21 +122,17 @@ def doc_callable(f):
         Text chunks constituting Markdown documentation for single function.
 
     """
-    if not hasattr(f, "__call__"):
+    if not is_callable_like(f):
         raise TypeError(_type_err_message(callable, f))
 
     n = f.__name__
     head = function_header.format(n.replace('_', '\\_'))
-    sign = 'def %s%s\n' % (n, pydoc.inspect.formatargspec(*pydoc.inspect.getargspec(f)))
+    signature = "def {}{}:\n".format(
+        n, pydoc.inspect.formatargspec(*pydoc.inspect.getargspec(f)))
 
-    res = [head, '```py\n', sign, '```\n']
-
-    # Add for docstring if present.
     ds = pydoc.inspect.getdoc(f)
-    ds and res.extend(['\n', ds])
-
-    res.append('\n')
-    return res
+    ds_parts = [style_docstr(ds)] if ds else []
+    return [head, "```python\n", signature] + ds_parts + ["```\n", "\n"]
 
 
 def _get_targets(mod):
@@ -195,12 +214,26 @@ def main():
         # Attempt import
         mod = pydoc.safeimport(modpath)
         if mod is None:
-            print("Module not found")
-        # Module imported correctly, let's create the docs
-        return doc_module(mod)
-    except pydoc.ErrorDuringImport as e:
-        print("Error while trying to import module {} -- {}".format(modpath, e))
+            print("ERROR -- module not found: {}".format(modpath))
+            raise SystemExit
+    except pydoc.ErrorDuringImport:
+        print("Error while trying to import module {}".format(modpath))
+        raise
+    else:
+        style = get_styler(opts.style)
+        doc = doc_module(mod, style)
+        if opts.output:
+            outdir = os.path.dirname(opts.output)
+            if outdir and not os.path.isdir(outdir):
+                os.makedirs(outdir)
+            msg, mode = ("Appending", 'a') if opts.append else ("Writing", 'w')
+            print("{} docs: {}".format(msg, opts.output))
+            with open(opts.output, mode) as f:
+                f.write(doc)
+            print("Done.")
+        else:
+            print(doc)
 
 
 if __name__ == '__main__':
-    print(main())
+    main()
