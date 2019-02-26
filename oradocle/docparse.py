@@ -8,7 +8,7 @@ from .exceptions import OradocleError
 __author__ = "Vince Reuter"
 __email__ = "vreuter@virginia.edu"
 
-__all__ = ["DocstringParser", "RstDocstringParser"]
+__all__ = ["DocstringParser", "RstDocstringParser", "get_parser"]
 
 
 class DocstringParser(object):
