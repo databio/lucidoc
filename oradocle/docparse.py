@@ -1,7 +1,6 @@
 """ Docstring parsing """
 
 import abc
-import itertools
 import os
 from .exceptions import OradocleError
 
