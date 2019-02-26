@@ -9,6 +9,10 @@ import itertools
 import os
 import pydoc
 import sys
+from .helpers import *
+from .docstyle import get_styler, STYLERS
+from .docparse import get_parser
+
 
 module_header = "# Package {} Documentation\n"
 class_header = "## Class {}"
@@ -19,14 +23,34 @@ __all__ = ["doc_class", "doc_callable", "doc_module"]
 
 
 def _parse_args(cmdl):
+
     parser = argparse.ArgumentParser(
         description="Generate Markdown documentation for a module",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument("module", help="Name/dotted path of module to document")
+
+    # Required
+    parser.add_argument(
+        "module",
+        help="Name/dotted path of module to document")
+    parser.add_argument(
+        "-P", "--parse", required=True,
+        help="Name of parsing strategy for docstrings")
+
+    # Optional
+    parser.add_argument(
+        "--append", action="store_true",
+        help="Indicate that new docs should be appended to given file")
+    parser.add_argument(
+        "-O", "--output",
+        help="Path to output file")
+    parser.add_argument(
+        "-S", "--style", choices=list(STYLERS.keys()),
+        help="Name indicating which styler to use to render docstrings")
+
     return parser.parse_args(cmdl)
 
 
-def doc_module(mod):
+def doc_module(mod, docstr_parser, style_docstr):
     """
     Get large block of Markdown-formatted documentation of a module
 
@@ -34,6 +58,10 @@ def doc_module(mod):
     ----------
     mod : module
         Module to document in Markdown.
+    docstr_parser : oradocle.DocstringParser
+        How to parse a docstring.
+    style_docstr : oradocle.DocstringStyler
+        How to style/render a docstring.
 
     Returns
     -------
@@ -47,16 +75,16 @@ def doc_module(mod):
     targets = _get_targets(mod)
     for n, t in targets:
         if inspect.isfunction(t) and not _unprotected(n):
-            doc_chunks = doc_callable(t)
+            doc_chunks = doc_callable(t, docstr_parser, style_docstr)
         elif inspect.isclass(t) and _unprotected(n):
-            doc_chunks = doc_class(t)
+            doc_chunks = doc_class(t, docstr_parser, style_docstr)
         else:
             continue
         output.extend(doc_chunks)
     return "\n".join(str(x) for x in output)
 
 
-def doc_class(cls):
+def doc_class(cls, docstr_parser, style_docstr):
     """
     For single class definition, get text components for Markdown documentation.
 
@@ -64,6 +92,10 @@ def doc_class(cls):
     ----------
     cls : class
         Class to document with Markdown
+    docstr_parser : oradocle.DocstringParser
+        How to parse a docstring.
+    style_docstr : callable
+        How to style/render a docstring
 
     Returns
     -------
@@ -78,13 +110,18 @@ def doc_class(cls):
     def use_obj(name, _):
         return _unprotected(name)
 
-    cls_doc = [class_header.format(cls.__name__), pydoc.inspect.getdoc(cls)]
-    func_docs = _proc_objs(cls, doc_callable, pydoc.inspect.ismethod, use_obj)
-    subcls_docs = _proc_objs(cls, doc_class, pydoc.inspect.isclass, use_obj)
+    cls_doc = [class_header.format(cls.__name__),
+               style_docstr(pydoc.inspect.getdoc(cls))]
+    func_docs = _proc_objs(
+        cls, lambda f: doc_callable(f, docstr_parser, style_docstr),
+        pydoc.inspect.ismethod, use_obj)
+    subcls_docs = _proc_objs(
+        cls, lambda c: doc_class(c, docstr_parser, style_docstr),
+        pydoc.inspect.isclass, use_obj)
     return cls_doc + func_docs + subcls_docs
 
 
-def doc_callable(f):
+def doc_callable(f, docstr_parser, style_docstr):
     """
     For single function get text components for Markdown documentation.
 
@@ -92,6 +129,10 @@ def doc_callable(f):
     ----------
     f : callable
         Function to document with Markdown
+    docstr_parser : oradocle.DocstringParser
+        How to parse a docstring.
+    style_docstr : callable
+        How to style/render a docstring
 
     Returns
     -------
@@ -99,20 +140,22 @@ def doc_callable(f):
         Text chunks constituting Markdown documentation for single function.
 
     """
-    if not hasattr(f, "__call__"):
+    if not is_callable_like(f):
         raise TypeError(_type_err_message(callable, f))
 
     n = f.__name__
     head = function_header.format(n.replace('_', '\\_'))
-    sign = 'def %s%s\n' % (n, pydoc.inspect.formatargspec(*pydoc.inspect.getargspec(f)))
+    signature = "def {}{}:\n".format(
+        n, pydoc.inspect.formatargspec(*pydoc.inspect.getargspec(f)))
 
-    res = [head, '```py\n', sign, '```\n']
-
-    # Add for docstring if present.
+    res = [head]
     ds = pydoc.inspect.getdoc(f)
-    ds and res.extend(['\n', ds])
-
-    res.append('\n')
+    if ds:
+        desc_text, tags_text = docstr_parser.split_docstring(ds)
+        res.extend([desc_text, "```python\n", signature, style_docstr(tags_text)])
+    else:
+        res.append(signature)
+    res.extend(["```\n", "\n"])
     return res
 
 
@@ -195,12 +238,27 @@ def main():
         # Attempt import
         mod = pydoc.safeimport(modpath)
         if mod is None:
-            print("Module not found")
-        # Module imported correctly, let's create the docs
-        return doc_module(mod)
-    except pydoc.ErrorDuringImport as e:
-        print("Error while trying to import module {} -- {}".format(modpath, e))
+            print("ERROR -- module not found: {}".format(modpath))
+            raise SystemExit
+    except pydoc.ErrorDuringImport:
+        print("Error while trying to import module {}".format(modpath))
+        raise
+    else:
+        parse = get_parser(opts.parse)
+        style = get_styler(opts.style)
+        doc = doc_module(mod, parse, style)
+        if opts.output:
+            outdir = os.path.dirname(opts.output)
+            if outdir and not os.path.isdir(outdir):
+                os.makedirs(outdir)
+            msg, mode = ("Appending", 'a') if opts.append else ("Writing", 'w')
+            print("{} docs: {}".format(msg, opts.output))
+            with open(opts.output, mode) as f:
+                f.write(doc)
+            print("Done.")
+        else:
+            print(doc)
 
 
 if __name__ == '__main__':
-    print(main())
+    main()
