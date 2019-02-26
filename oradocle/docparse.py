@@ -17,19 +17,19 @@ class DocstringParser(object):
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
-    def description(self, ds):
+    def split_docstring(self, ds):
         """
-        Parse the description portion of a docstring
+        Split a docstring into description and tags portions
 
         Parameters
         ----------
         ds : str
-            The docstring to parse.
+            Docstring to split
 
         Returns
         -------
-        str
-            The description portion of a docstring.
+        str, str
+            Pair in which first component is description, second is tags
 
         """
         pass
@@ -38,12 +38,26 @@ class DocstringParser(object):
 class RstDocstringParser(DocstringParser):
     """ Parser for ReStructured text docstrings. """
 
-    def description(self, ds):
+    def split_docstring(self, ds):
         if not isinstance(ds, str):
             raise TypeError(
                 "Alleged docstring isn't a string, but {}".format(type(ds)))
-        return os.linesep.join(itertools.takewhile(
-            lambda l: not l.startswith(":"), ds.split(os.linesep)))
+
+        def first_index(s, p):
+            for i, x in enumerate(s):
+                if p(x):
+                    return i
+            raise IndexError
+
+        chunks = ds.split(os.linesep)
+
+        try:
+            first_tag_index = first_index(chunks, lambda l: l.startswith(":"))
+        except IndexError:
+            return ds, ""
+        else:
+            return os.linesep.join(chunks[:first_tag_index]), \
+                   os.linesep.join(chunks[first_tag_index:])
 
 
 RST_KEY = "rst"

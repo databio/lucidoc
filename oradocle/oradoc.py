@@ -33,7 +33,7 @@ def _parse_args(cmdl):
         "module",
         help="Name/dotted path of module to document")
     parser.add_argument(
-        "-P", "--parser", required=True,
+        "-P", "--parse", required=True,
         help="Name of parsing strategy for docstrings")
 
     # Optional
@@ -50,7 +50,7 @@ def _parse_args(cmdl):
     return parser.parse_args(cmdl)
 
 
-def doc_module(mod, parse_docstr, style_docstr):
+def doc_module(mod, docstr_parser, style_docstr):
     """
     Get large block of Markdown-formatted documentation of a module
 
@@ -58,7 +58,7 @@ def doc_module(mod, parse_docstr, style_docstr):
     ----------
     mod : module
         Module to document in Markdown.
-    parse_docstr : oradocle.DocstringParser
+    docstr_parser : oradocle.DocstringParser
         How to parse a docstring.
     style_docstr : oradocle.DocstringStyler
         How to style/render a docstring.
@@ -75,16 +75,16 @@ def doc_module(mod, parse_docstr, style_docstr):
     targets = _get_targets(mod)
     for n, t in targets:
         if inspect.isfunction(t) and not _unprotected(n):
-            doc_chunks = doc_callable(t, parse_docstr, style_docstr)
+            doc_chunks = doc_callable(t, docstr_parser, style_docstr)
         elif inspect.isclass(t) and _unprotected(n):
-            doc_chunks = doc_class(t, parse_docstr, style_docstr)
+            doc_chunks = doc_class(t, docstr_parser, style_docstr)
         else:
             continue
         output.extend(doc_chunks)
     return "\n".join(str(x) for x in output)
 
 
-def doc_class(cls, parse_docstr, style_docstr):
+def doc_class(cls, docstr_parser, style_docstr):
     """
     For single class definition, get text components for Markdown documentation.
 
@@ -92,7 +92,7 @@ def doc_class(cls, parse_docstr, style_docstr):
     ----------
     cls : class
         Class to document with Markdown
-    parse_docstr : oradocle.DocstringParser
+    docstr_parser : oradocle.DocstringParser
         How to parse a docstring.
     style_docstr : callable
         How to style/render a docstring
@@ -113,15 +113,15 @@ def doc_class(cls, parse_docstr, style_docstr):
     cls_doc = [class_header.format(cls.__name__),
                style_docstr(pydoc.inspect.getdoc(cls))]
     func_docs = _proc_objs(
-        cls, lambda f: doc_callable(f, parse_docstr, style_docstr),
+        cls, lambda f: doc_callable(f, docstr_parser, style_docstr),
         pydoc.inspect.ismethod, use_obj)
     subcls_docs = _proc_objs(
-        cls, lambda c: doc_class(c, parse_docstr, style_docstr),
+        cls, lambda c: doc_class(c, docstr_parser, style_docstr),
         pydoc.inspect.isclass, use_obj)
     return cls_doc + func_docs + subcls_docs
 
 
-def doc_callable(f, parse_docstr, style_docstr):
+def doc_callable(f, docstr_parser, style_docstr):
     """
     For single function get text components for Markdown documentation.
 
@@ -129,7 +129,7 @@ def doc_callable(f, parse_docstr, style_docstr):
     ----------
     f : callable
         Function to document with Markdown
-    parse_docstr : oradocle.DocstringParser
+    docstr_parser : oradocle.DocstringParser
         How to parse a docstring.
     style_docstr : callable
         How to style/render a docstring
@@ -148,9 +148,15 @@ def doc_callable(f, parse_docstr, style_docstr):
     signature = "def {}{}:\n".format(
         n, pydoc.inspect.formatargspec(*pydoc.inspect.getargspec(f)))
 
+    res = [head]
     ds = pydoc.inspect.getdoc(f)
-    return [head, "```python\n", signature] + \
-        ([style_docstr(ds)] if ds else []) + ["```\n", "\n"]
+    if ds:
+        desc_text, tags_text = docstr_parser.split_docstring(ds)
+        res.extend([desc_text, "```python\n", signature, style_docstr(tags_text)])
+    else:
+        res.append(signature)
+    res.extend(["```\n", "\n"])
+    return res
 
 
 def _get_targets(mod):
