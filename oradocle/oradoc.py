@@ -110,8 +110,9 @@ def doc_class(cls, docstr_parser, style_docstr):
     def use_obj(name, _):
         return _unprotected(name)
 
-    cls_doc = [class_header.format(cls.__name__),
-               style_docstr(pydoc.inspect.getdoc(cls))]
+    class_docstr = pydoc.inspect.getdoc(cls)
+
+    cls_doc = [class_header.format(cls.__name__), style_docstr(class_docstr)]
     func_docs = _proc_objs(
         cls, lambda f: doc_callable(f, docstr_parser, style_docstr),
         pydoc.inspect.ismethod, use_obj)
@@ -119,6 +120,19 @@ def doc_class(cls, docstr_parser, style_docstr):
         cls, lambda c: doc_class(c, docstr_parser, style_docstr),
         pydoc.inspect.isclass, use_obj)
     return cls_doc + func_docs + subcls_docs
+
+
+def _get_class_docstring(cls):
+    if not inspect.isclass(cls):
+        raise TypeError("Attempted to get class docstring for a non-class "
+                        "object: {}".format(cls))
+    init_func = [o for n, o in inspect.getmembers(cls) if
+                 n == "__init__" and inspect.ismethod(o)]
+    header_cls_doc = pydoc.inspect.getdoc(cls)
+    init_cls_doc = pydoc.inspect.getdoc(init_func)
+    if header_cls_doc and init_cls_doc:
+        raise ValueError("Both header docstring and constructor docstring are "
+                         "present for {}".format(cls.__name__))
 
 
 def doc_callable(f, docstr_parser, style_docstr):
@@ -152,7 +166,7 @@ def doc_callable(f, docstr_parser, style_docstr):
     ds = pydoc.inspect.getdoc(f)
     if ds:
         desc_text, tags_text = docstr_parser.split_docstring(ds)
-        res.extend([desc_text, "```python\n", signature, style_docstr(tags_text)])
+        res.extend([desc_text, "```py\n", signature, style_docstr(tags_text)])
     else:
         res.append(signature)
     res.extend(["```\n", "\n"])

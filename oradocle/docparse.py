@@ -20,16 +20,8 @@ class DocstringParser(object):
         """
         Split a docstring into description and tags portions
 
-        Parameters
-        ----------
-        ds : str
-            Docstring to split
-
-        Returns
-        -------
-        str, str
-            Pair in which first component is description, second is tags
-
+        :param str ds: Docstring to split
+        :return str, str: Pair of description and tags text
         """
         pass
 
@@ -38,6 +30,13 @@ class RstDocstringParser(DocstringParser):
     """ Parser for ReStructured text docstrings. """
 
     def split_docstring(self, ds):
+        """
+        Split a docstring into description and tags portions.
+
+        :param str ds: Docstring to split
+        :return str, str: Pair of description and tags text
+        :raise TypeError: If argument to docstring parameter is not a string.
+        """
         if not isinstance(ds, str):
             raise TypeError(
                 "Alleged docstring isn't a string, but {}".format(type(ds)))
@@ -58,6 +57,15 @@ class RstDocstringParser(DocstringParser):
             return os.linesep.join(chunks[:first_tag_index]), \
                    os.linesep.join(chunks[first_tag_index:])
 
+    def params(self, ds):
+        pass
+
+    def returns(self, ds):
+        pass
+
+    def raises(self, ds):
+        pass
+
 
 RST_KEY = "rst"
 STYLERS = {RST_KEY: RstDocstringParser()}
@@ -75,21 +83,11 @@ def get_parser(name):
     """
     Get a docstring parsing strategy.
 
-    Parameters
-    ----------
-    name : str
-        Key for a parsing strategy.
-
-    Returns
-    -------
-    oradocle.DocstringParser
-        The parser to which the given name is mapped.
-
-    Raises
-    ------
-    oradocle.UnknownParserError
-        If given a nonempty name that's not mapped to a parser.
-
+    :param str name: Key for a parsing strategy.
+    :return oradocle.DocstringParser: The parser to which the given name is
+        mapped.
+    :raise oradocle.UnknownParserError: If given a nonempty name that's not
+        mapped to a parser.
     """
     try:
         return STYLERS[name]

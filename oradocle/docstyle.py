@@ -31,7 +31,7 @@ class PycodeDocstringStyler(DocstringStyler):
     def __call__(self, ds):
         if not isinstance(ds, str):
             raise TypeError("Non-string docstring ({})".format(type(ds)))
-        return "```python{}```".format(ds)
+        return "```py{}```".format(ds)
 
 
 PLAIN_KEY = "plain"
