@@ -2,8 +2,13 @@
 
 import abc
 from collections import namedtuple
-from itertools import dropwhile, filterfalse, takewhile, tee
+from itertools import dropwhile, takewhile, tee
 import os
+import sys
+if sys.version_info < (3, 0):
+    from itertools import ifilterfalse as filterfalse
+else:
+    from itertools import filterfalse
 from .exceptions import OradocleError
 from .helpers import cleanly_join_lines
 
@@ -53,7 +58,6 @@ class RstDocstringParser(DocstringParser):
     def __init__(self):
         super(RstDocstringParser, self).__init__()
         self._last_seen = None
-        self._params, self._returns, self._raises = None, None, None
 
     def header(self, ds):
         try:
@@ -103,6 +107,8 @@ class RstDocstringParser(DocstringParser):
         return l.startswith(":")
 
     def _parse(self, ds, name=None):
+        # DEBUG
+        print("PARSING")
         lines = ds.split(os.linesep)
 
         try:
@@ -156,7 +162,11 @@ class RstDocstringParser(DocstringParser):
                              format(len(ret), ret))
 
         self._last_seen = ParsedDocstringResult(ds, desc, par, ret, err, ex_lines)
-        return (name and getattr(self._last_seen, name)) or self._last_seen
+        res = (name and getattr(self._last_seen, name)) or self._last_seen
+        # DEBUG
+        print("REQUESTED: {}".format(name))
+        print("type(res): {}".format(type(res)))
+        return res
 
     def _get_tag(self, chunk):
         """ Create the tag associated with a chunk of docstring lines. """

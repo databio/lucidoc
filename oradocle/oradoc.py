@@ -75,9 +75,11 @@ def doc_module(mod, docstr_parser, style_docstr):
     targets = _get_targets(mod)
     for n, t in targets:
         if inspect.isfunction(t) and not _unprotected(n):
-            doc_chunks = doc_callable(t, docstr_parser, style_docstr)
+            #doc_chunks = doc_callable(t, docstr_parser, style_docstr)
+            doc_chunks = doc_callable(t, docstr_parser)
         elif inspect.isclass(t) and _unprotected(n):
-            doc_chunks = doc_class(t, docstr_parser, style_docstr)
+            #doc_chunks = doc_class(t, docstr_parser, style_docstr)
+            doc_chunks = doc_class(t, docstr_parser)
         else:
             continue
         output.extend(doc_chunks)
@@ -172,7 +174,10 @@ def doc_callable(f, docstr_parser):
         param_tags = docstr_parser.params(ds)
         ret_tag = docstr_parser.returns(ds)
         err_tags = docstr_parser.raises(ds)
+        assert isinstance(err_tags, list), "Not a list: {}".format(type(err_tags))
         param_tag_lines = ["{} ({}): {}".format(t.name, t.typename, t.description) for t in param_tags]
+        # DEBUG
+        print("{} error tags: {}".format(len(err_tags), "\n".join(map(str, err_tags))))
         err_tag_lines = ["{}: {}".format(t.typename, t.description) for t in err_tags]
         block_lines = []
         if param_tag_lines:
