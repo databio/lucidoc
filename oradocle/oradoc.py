@@ -84,7 +84,8 @@ def doc_module(mod, docstr_parser, style_docstr):
     return "\n".join(str(x) for x in output)
 
 
-def doc_class(cls, docstr_parser, style_docstr):
+#def doc_class(cls, docstr_parser, style_docstr):
+def doc_class(cls, docstr_parser):
     """
     For single class definition, get text components for Markdown documentation.
 
@@ -94,8 +95,6 @@ def doc_class(cls, docstr_parser, style_docstr):
         Class to document with Markdown
     docstr_parser : oradocle.DocstringParser
         How to parse a docstring.
-    style_docstr : callable
-        How to style/render a docstring
 
     Returns
     -------
@@ -112,12 +111,15 @@ def doc_class(cls, docstr_parser, style_docstr):
 
     class_docstr = pydoc.inspect.getdoc(cls)
 
-    cls_doc = [class_header.format(cls.__name__), style_docstr(class_docstr)]
+    #cls_doc = [class_header.format(cls.__name__), style_docstr(class_docstr)]
+    cls_doc = [class_header.format(cls.__name__), class_docstr]
     func_docs = _proc_objs(
-        cls, lambda f: doc_callable(f, docstr_parser, style_docstr),
+        #cls, lambda f: doc_callable(f, docstr_parser, style_docstr),
+        cls, lambda f: doc_callable(f, docstr_parser),
         pydoc.inspect.ismethod, use_obj)
     subcls_docs = _proc_objs(
-        cls, lambda c: doc_class(c, docstr_parser, style_docstr),
+        #cls, lambda c: doc_class(c, docstr_parser, style_docstr),
+        cls, lambda c: doc_class(c, docstr_parser),
         pydoc.inspect.isclass, use_obj)
     return cls_doc + func_docs + subcls_docs
 
@@ -135,7 +137,8 @@ def _get_class_docstring(cls):
                          "present for {}".format(cls.__name__))
 
 
-def doc_callable(f, docstr_parser, style_docstr):
+#def doc_callable(f, docstr_parser, style_docstr):
+def doc_callable(f, docstr_parser):
     """
     For single function get text components for Markdown documentation.
 
@@ -145,8 +148,6 @@ def doc_callable(f, docstr_parser, style_docstr):
         Function to document with Markdown
     docstr_parser : oradocle.DocstringParser
         How to parse a docstring.
-    style_docstr : callable
-        How to style/render a docstring
 
     Returns
     -------
@@ -165,8 +166,27 @@ def doc_callable(f, docstr_parser, style_docstr):
     res = [head]
     ds = pydoc.inspect.getdoc(f)
     if ds:
-        desc_text, tags_text = docstr_parser.split_docstring(ds)
-        res.extend([desc_text, "```py\n", signature, style_docstr(tags_text)])
+        #desc_text, tags_text = docstr_parser.split_docstring(ds)
+        #block = style_docstr(tags_text)
+        desc_text = docstr_parser.description(ds)
+        param_tags = docstr_parser.params(ds)
+        ret_tag = docstr_parser.returns(ds)
+        err_tags = docstr_parser.raises(ds)
+        param_tag_lines = ["{} ({}): {}".format(t.name, t.typename, t.description) for t in param_tags]
+        err_tag_lines = ["{}: {}".format(t.typename, t.description) for t in err_tags]
+        block_lines = []
+        if param_tag_lines:
+            block_lines.append("**Parameters:**")
+            block_lines.extend(["\t" + l for l in param_tag_lines])
+        if ret_tag:
+            block_lines.append("**Returns:**")
+            block_lines.append("{}: {}".format(ret_tag.typename, ret_tag.description))
+        if err_tag_lines:
+            block_lines.append("**Raises:**")
+            block_lines.extend(["\t" + l for l in err_tag_lines])
+        res.extend([desc_text, ])
+        block = "\n".join(block_lines)
+        res.extend([desc_text, "```py\n", signature, block])
     else:
         res.append(signature)
     res.extend(["```\n", "\n"])
