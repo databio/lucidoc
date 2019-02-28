@@ -101,13 +101,6 @@ class RstDocstringParser(DocstringParser):
             self._parse(ds, name)
 
     def _cached(self, ds):
-        # DEBUG
-        if self._last_seen is None:
-            return False
-        print("Checking CACHE")
-        print("DOCSTRING: {}".format(ds))
-        print("CURR: {}".format(self._last_seen))
-        print("equal?: {}".format(self._last_seen.doc == ds))
         return self._last_seen is not None and self._last_seen.doc == ds
 
     @staticmethod
@@ -116,8 +109,6 @@ class RstDocstringParser(DocstringParser):
         return l.startswith(":")
 
     def _parse(self, ds, name=None):
-        # DEBUG
-        print("PARSING")
         lines = ds.split(os.linesep)
 
         try:
@@ -172,11 +163,7 @@ class RstDocstringParser(DocstringParser):
         ret = ret[0] if ret else None
 
         self._last_seen = ParsedDocstringResult(ds, desc, par, ret, err, ex_lines)
-        res = (name and getattr(self._last_seen, name)) or self._last_seen
-        # DEBUG
-        print("REQUESTED: {}".format(name))
-        print("type(res): {}".format(type(res)))
-        return res
+        return (name and getattr(self._last_seen, name)) or self._last_seen
 
     def _get_tag(self, chunk):
         """ Create the tag associated with a chunk of docstring lines. """

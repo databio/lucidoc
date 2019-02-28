@@ -176,8 +176,6 @@ def doc_callable(f, docstr_parser):
         err_tags = docstr_parser.raises(ds)
         assert isinstance(err_tags, list), "Not a list: {}".format(type(err_tags))
         param_tag_lines = ["{} ({}): {}".format(t.name, t.typename, t.description) for t in param_tags]
-        # DEBUG
-        print("{} error tags: {}".format(len(err_tags), "\n".join(map(str, err_tags))))
         err_tag_lines = ["{}: {}".format(t.typename, t.description) for t in err_tags]
         block_lines = []
         if param_tag_lines:
