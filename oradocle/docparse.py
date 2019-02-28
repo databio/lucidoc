@@ -10,7 +10,7 @@ if sys.version_info < (3, 0):
 else:
     from itertools import filterfalse
 from .exceptions import OradocleError
-from .helpers import cleanly_join_lines
+
 
 __author__ = "Vince Reuter"
 __email__ = "vreuter@virginia.edu"
@@ -36,10 +36,6 @@ class DocstringParser(object):
         pass
 
     @abc.abstractmethod
-    def detail(self, ds):
-        pass
-
-    @abc.abstractmethod
     def params(self, ds):
         pass
 
@@ -59,21 +55,21 @@ class RstDocstringParser(DocstringParser):
         super(RstDocstringParser, self).__init__()
         self._last_seen = None
 
+    """
     def header(self, ds):
         try:
             return self.description(ds)[0]
         except IndexError:
             raise Exception("Empty docstring")
+    """
 
-    @staticmethod
-    def _blank(l):
-        return l.strip() == ""
-
+    """
     def detail(self, ds):
         full_desc = self.description(ds)
         return list(takewhile(
             lambda l: not self._blank(l),
             dropwhile(self._blank, full_desc.split(os.linesep)[1:])))
+    """
 
     def description(self, ds):
         name = "desc"
@@ -100,8 +96,25 @@ class RstDocstringParser(DocstringParser):
         return getattr(self._last_seen, name) if self._cached(ds) else \
             self._parse(ds, name)
 
+    @staticmethod
+    def _blank(l):
+        return l.strip() == ""
+
     def _cached(self, ds):
         return self._last_seen is not None and self._last_seen.doc == ds
+
+    def _get_tag(self, chunk):
+        """ Create the tag associated with a chunk of docstring lines. """
+        try:
+            decl_line = chunk[0]
+        except IndexError:
+            raise Exception("Empty tag chunk")
+        tag_type, args = self._parse_tag_start(decl_line)
+        if len(chunk) > 1:
+            desc = args[-1] if isinstance(args[-1], list) else [args[-1]]
+            args[-1] = desc + desc + [l.lstrip() for l in chunk[1:]]
+        tag = tag_type(*args)
+        return tag
 
     @staticmethod
     def _is_tag_start(l):
@@ -119,7 +132,9 @@ class RstDocstringParser(DocstringParser):
         ls1, ls2 = tee(lines[1:])
         detail_lines = list(filterfalse(
             self._blank, takewhile(lambda l: not self._is_tag_start(l), ls1)))
-        desc = cleanly_join_lines([head] + detail_lines)
+        desc = head
+        if detail_lines:
+            desc += ("\n\n" + "\n".join(detail_lines))
         post_desc = list(filterfalse(
             self._blank, dropwhile(lambda l: not self._is_tag_start(l), ls2)))
 
@@ -165,20 +180,8 @@ class RstDocstringParser(DocstringParser):
         self._last_seen = ParsedDocstringResult(ds, desc, par, ret, err, ex_lines)
         return (name and getattr(self._last_seen, name)) or self._last_seen
 
-    def _get_tag(self, chunk):
-        """ Create the tag associated with a chunk of docstring lines. """
-        try:
-            decl_line = chunk[0]
-        except IndexError:
-            raise Exception("Empty tag chunk")
-        tag_type, args = self._parse_tag_start(decl_line)
-        if len(chunk) > 1:
-            desc = args[-1] if isinstance(args[-1], list) else [args[-1]]
-            args[-1] = desc + desc + [l.lstrip() for l in chunk[1:]]
-        tag = tag_type(*args)
-        return tag
-
-    def _parse_tag_start(self, line):
+    @staticmethod
+    def _parse_tag_start(line):
         """ Parse first of a chunk of lines associated with a docstring tag. """
         if line.startswith(":param"):
             tt = ParamDoc

@@ -162,7 +162,7 @@ def doc_callable(f, docstr_parser):
 
     n = f.__name__
     head = function_header.format(n.replace('_', '\\_'))
-    signature = "def {}{}:\n".format(
+    signature = "```python\ndef {}{}:\n```\n".format(
         n, pydoc.inspect.formatargspec(*pydoc.inspect.getargspec(f)))
 
     res = [head]
@@ -175,24 +175,26 @@ def doc_callable(f, docstr_parser):
         ret_tag = docstr_parser.returns(ds)
         err_tags = docstr_parser.raises(ds)
         assert isinstance(err_tags, list), "Not a list: {}".format(type(err_tags))
-        param_tag_lines = ["{} ({}): {}".format(t.name, t.typename, t.description) for t in param_tags]
-        err_tag_lines = ["{}: {}".format(t.typename, t.description) for t in err_tags]
+        param_tag_lines = ["- `{}` `{}`: {}".format(t.typename, t.name, t.description) for t in param_tags]
+        err_tag_lines = ["- `{}`: {}".format(t.typename, t.description) for t in err_tags]
         block_lines = []
         if param_tag_lines:
-            block_lines.append("**Parameters:**")
-            block_lines.extend(["\t" + l for l in param_tag_lines])
+            block_lines.append("**Parameters:**\n")
+            block_lines.extend(param_tag_lines)
+            block_lines.append("\n")
         if ret_tag:
-            block_lines.append("**Returns:**")
+            block_lines.append("**Returns:**\n")
             block_lines.append("{}: {}".format(ret_tag.typename, ret_tag.description))
+            block_lines.append("\n")
         if err_tag_lines:
-            block_lines.append("**Raises:**")
-            block_lines.extend(["\t" + l for l in err_tag_lines])
-        res.extend([desc_text, ])
+            block_lines.append("**Raises:**\n")
+            block_lines.extend(err_tag_lines)
+            block_lines.append("\n")
         block = "\n".join(block_lines)
-        res.extend([desc_text, "```py\n", signature, block])
+        res.extend([desc_text, signature, block])
     else:
         res.append(signature)
-    res.extend(["```\n", "\n"])
+    res.append("\n")
     return res
 
 
