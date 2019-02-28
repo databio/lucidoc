@@ -169,6 +169,7 @@ class RstDocstringParser(DocstringParser):
         if len(ret) > 1:
             raise ValueError("Multiple ({}) returns tags: {}".
                              format(len(ret), ret))
+        ret = ret[0] if ret else None
 
         self._last_seen = ParsedDocstringResult(ds, desc, par, ret, err, ex_lines)
         res = (name and getattr(self._last_seen, name)) or self._last_seen
