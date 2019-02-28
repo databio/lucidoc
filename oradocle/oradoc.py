@@ -10,8 +10,9 @@ import os
 import pydoc
 import sys
 from .helpers import *
-from .docstyle import get_styler, STYLERS
 from .docparse import get_parser
+from .docstyle import get_styler, STYLERS
+from .doctags import MdTagRenderer
 from .exceptions import OradocError
 
 
@@ -51,7 +52,7 @@ def _parse_args(cmdl):
     return parser.parse_args(cmdl)
 
 
-def doc_module(mod, docstr_parser, style_docstr):
+def doc_module(mod, docstr_parser, render_tag, style_docstr):
     """
     Get large block of Markdown-formatted documentation of a module
 
@@ -61,6 +62,10 @@ def doc_module(mod, docstr_parser, style_docstr):
         Module to document in Markdown.
     docstr_parser : oradocle.DocstringParser
         How to parse a docstring.
+    render_tag : callable(oradoc.DocTag) -> str
+        How to render an individual tag from a docstring. The implementation in
+        the object passed as an argument should handle each type of DocTag that
+        may be passed as an argument when this object is called.
     style_docstr : oradocle.DocstringStyler
         How to style/render a docstring.
 
@@ -77,10 +82,10 @@ def doc_module(mod, docstr_parser, style_docstr):
     for n, t in targets:
         if inspect.isfunction(t) and not _unprotected(n):
             #doc_chunks = doc_callable(t, docstr_parser, style_docstr)
-            doc_chunks = doc_callable(t, docstr_parser)
+            doc_chunks = doc_callable(t, docstr_parser, render_tag)
         elif inspect.isclass(t) and _unprotected(n):
             #doc_chunks = doc_class(t, docstr_parser, style_docstr)
-            doc_chunks = doc_class(t, docstr_parser)
+            doc_chunks = doc_class(t, docstr_parser, render_tag)
         else:
             continue
         output.extend(doc_chunks)
@@ -88,7 +93,7 @@ def doc_module(mod, docstr_parser, style_docstr):
 
 
 #def doc_class(cls, docstr_parser, style_docstr):
-def doc_class(cls, docstr_parser):
+def doc_class(cls, docstr_parser, render_tag):
     """
     For single class definition, get text components for Markdown documentation.
 
@@ -98,6 +103,10 @@ def doc_class(cls, docstr_parser):
         Class to document with Markdown
     docstr_parser : oradocle.DocstringParser
         How to parse a docstring.
+    render_tag : callable(oradoc.DocTag) -> str
+        How to render an individual tag from a docstring. The implementation in
+        the object passed as an argument should handle each type of DocTag that
+        may be passed as an argument when this object is called.
 
     Returns
     -------
@@ -106,6 +115,9 @@ def doc_class(cls, docstr_parser):
         definition.
 
     """
+
+    # TODO: handle parse of __init__ as alternative/supplement to class docstring.
+
     if not isinstance(cls, type):
         raise TypeError(_type_err_message(type, cls))
 
@@ -118,8 +130,10 @@ def doc_class(cls, docstr_parser):
     if class_docstr:
         parsed_clsdoc = docstr_parser(class_docstr)
         parsed_clsdoc.desc and cls_doc.append(parsed_clsdoc.desc)
-        param_tag_lines = ["- `{}` `{}`: {}".format(t.typename, t.name, t.description) for t in parsed_clsdoc.params]
-        err_tag_lines = ["- `{}`: {}".format(t.typename, t.description) for t in parsed_clsdoc.raises]
+        param_tag_lines = [render_tag(t) for t in parsed_clsdoc.params]
+        err_tag_lines = [render_tag(t) for t in parsed_clsdoc.raises]
+        #param_tag_lines = ["- `{}` `{}`: {}".format(t.typename, t.name, t.description) for t in parsed_clsdoc.params]
+        #err_tag_lines = ["- `{}`: {}".format(t.typename, t.description) for t in parsed_clsdoc.raises]
         block_lines = []
         if param_tag_lines:
             block_lines.append("**Parameters:**\n")
@@ -138,11 +152,11 @@ def doc_class(cls, docstr_parser):
     #cls_doc = [class_header.format(cls.__name__), style_docstr(class_docstr)]
     func_docs = _proc_objs(
         #cls, lambda f: doc_callable(f, docstr_parser, style_docstr),
-        cls, lambda f: doc_callable(f, docstr_parser),
+        cls, lambda f: doc_callable(f, docstr_parser, render_tag),
         pydoc.inspect.ismethod, use_obj)
     subcls_docs = _proc_objs(
         #cls, lambda c: doc_class(c, docstr_parser, style_docstr),
-        cls, lambda c: doc_class(c, docstr_parser),
+        cls, lambda c: doc_class(c, docstr_parser, render_tag),
         pydoc.inspect.isclass, use_obj)
     return cls_doc + func_docs + subcls_docs
 
@@ -161,7 +175,7 @@ def _get_class_docstring(cls):
 
 
 #def doc_callable(f, docstr_parser, style_docstr):
-def doc_callable(f, docstr_parser):
+def doc_callable(f, docstr_parser, render_tag):
     """
     For single function get text components for Markdown documentation.
 
@@ -303,9 +317,10 @@ def main():
         print("Error while trying to import module {}".format(modpath))
         raise
     else:
+        show_tag = MdTagRenderer()
         parse = get_parser(opts.parse)
         style = get_styler(opts.style)
-        doc = doc_module(mod, parse, style)
+        doc = doc_module(mod, parse, show_tag, style)
         if opts.output:
             outdir = os.path.dirname(opts.output)
             if outdir and not os.path.isdir(outdir):

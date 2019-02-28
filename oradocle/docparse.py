@@ -1,6 +1,7 @@
 """ Docstring parsing """
 
 import abc
+
 from collections import namedtuple
 from itertools import dropwhile, takewhile, tee
 import os
@@ -9,24 +10,20 @@ if sys.version_info < (3, 0):
     from itertools import ifilterfalse as filterfalse
 else:
     from itertools import filterfalse
+from .doctags import *
 from .exceptions import OradocError
 
 
 __author__ = "Vince Reuter"
 __email__ = "vreuter@virginia.edu"
 
+__all__ = ["DocstringParser", "ParsedDocstringResult",
+           "RstDocstringParser", "get_parser"]
+
 
 ParsedDocstringResult = namedtuple(
     "ParsedDocstringResult",
     ["doc", "desc", "params", "returns", "raises", "example"])
-ParamDoc = namedtuple("ParamDoc", ["name", "typename", "description"])
-ReturnsDoc = namedtuple("ReturnsDoc", ["typename", "description"])
-RaisesDoc = namedtuple("RaisesDoc", ["typename", "description"])
-
-TAG_TYPES = [ParamDoc, ReturnsDoc, RaisesDoc]
-
-__all__ = ["DocstringParser", "ParsedDocstringResult",
-           "RstDocstringParser", "get_parser"] + [tt.__name__ for tt in TAG_TYPES]
 
 
 class DocstringParser(object):
@@ -128,8 +125,7 @@ class RstDocstringParser(DocstringParser):
             raise OradocError("Empty tag chunk")
         tag_type, args = self._parse_tag_start(decl_line)
         if len(chunk) > 1:
-            desc = args[-1] if isinstance(args[-1], list) else [args[-1]]
-            args[-1] = desc + desc + [l.lstrip() for l in chunk[1:]]
+            args[-1] = args[-1] + " ".join(l.lstrip() for l in chunk[1:])
         tag = tag_type(*args)
         return tag
 
@@ -181,11 +177,11 @@ class RstDocstringParser(DocstringParser):
         tags = [self._get_tag(chunk) for chunk in raw_tag_blocks]
         par, ret, err = [], [], []
         for t in tags:
-            if isinstance(t, ParamDoc):
+            if isinstance(t, ParTag):
                 par.append(t)
-            elif isinstance(t, ReturnsDoc):
+            elif isinstance(t, RetTag):
                 ret.append(t)
-            elif isinstance(t, RaisesDoc):
+            elif isinstance(t, ErrTag):
                 err.append(t)
             else:
                 raise TypeError("Unrecognized doc tag type: {}".format(type(t)))
@@ -201,16 +197,16 @@ class RstDocstringParser(DocstringParser):
     def _parse_tag_start(line):
         """ Parse first of a chunk of lines associated with a docstring tag. """
         if line.startswith(":param"):
-            tt = ParamDoc
+            tt = ParTag
         elif line.startswith(":returns") or line.startswith(":return"):
-            tt = ReturnsDoc
+            tt = RetTag
         elif line.startswith(":raise") or line.startswith(":raises"):
-            tt = RaisesDoc
+            tt = ErrTag
         else:
             raise OradocError("Invalid tag declaration start: " + line)
         colon_chunks = line.split(":")
         left_parts, desc = colon_chunks[1:-1], colon_chunks[-1]
-        if issubclass(tt, ParamDoc):
+        if issubclass(tt, ParTag):
             mid_parts = left_parts[0].split(" ")
             name = mid_parts[-1]
             typename = " ".join(mid_parts[1:-1])
