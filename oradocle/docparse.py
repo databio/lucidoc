@@ -9,13 +9,11 @@ if sys.version_info < (3, 0):
     from itertools import ifilterfalse as filterfalse
 else:
     from itertools import filterfalse
-from .exceptions import OradocleError
+from .exceptions import OradocError
 
 
 __author__ = "Vince Reuter"
 __email__ = "vreuter@virginia.edu"
-
-__all__ = ["DocstringParser", "RstDocstringParser", "get_parser"]
 
 
 ParsedDocstringResult = namedtuple(
@@ -25,11 +23,27 @@ ParamDoc = namedtuple("ParamDoc", ["name", "typename", "description"])
 ReturnsDoc = namedtuple("ReturnsDoc", ["typename", "description"])
 RaisesDoc = namedtuple("RaisesDoc", ["typename", "description"])
 
+TAG_TYPES = [ParamDoc, ReturnsDoc, RaisesDoc]
+
+__all__ = ["DocstringParser", "ParsedDocstringResult",
+           "RstDocstringParser", "get_parser"] + [tt.__name__ for tt in TAG_TYPES]
+
 
 class DocstringParser(object):
     """ Entity responsible for parsing docstrings """
 
     __metaclass__ = abc.ABCMeta
+
+    @abc.abstractmethod
+    def __call__(self, ds):
+        """
+        Fully parse the given docstring.
+
+        :param str ds: The docstring to parse.
+        :return oradocle.ParsedDocstringResult: The complete result of parsing
+            the given docstring.
+        """
+        pass
 
     @abc.abstractmethod
     def description(self, ds):
@@ -60,7 +74,7 @@ class RstDocstringParser(DocstringParser):
         try:
             return self.description(ds)[0]
         except IndexError:
-            raise Exception("Empty docstring")
+            raise OradocError("Empty docstring")
     """
 
     """
@@ -70,6 +84,9 @@ class RstDocstringParser(DocstringParser):
             lambda l: not self._blank(l),
             dropwhile(self._blank, full_desc.split(os.linesep)[1:])))
     """
+
+    def __call__(self, ds):
+        return self._last_seen if self._cached(ds) else self._parse(ds)
 
     def description(self, ds):
         name = "desc"
@@ -108,7 +125,7 @@ class RstDocstringParser(DocstringParser):
         try:
             decl_line = chunk[0]
         except IndexError:
-            raise Exception("Empty tag chunk")
+            raise OradocError("Empty tag chunk")
         tag_type, args = self._parse_tag_start(decl_line)
         if len(chunk) > 1:
             desc = args[-1] if isinstance(args[-1], list) else [args[-1]]
@@ -127,7 +144,7 @@ class RstDocstringParser(DocstringParser):
         try:
             head = lines[0]
         except IndexError:
-            raise Exception("Empty docstring")
+            raise OradocError("Empty docstring")
 
         ls1, ls2 = tee(lines[1:])
         detail_lines = list(filterfalse(
@@ -190,7 +207,7 @@ class RstDocstringParser(DocstringParser):
         elif line.startswith(":raise") or line.startswith(":raises"):
             tt = RaisesDoc
         else:
-            raise Exception("Invalid tag declaration start: " + line)
+            raise OradocError("Invalid tag declaration start: " + line)
         colon_chunks = line.split(":")
         left_parts, desc = colon_chunks[1:-1], colon_chunks[-1]
         if issubclass(tt, ParamDoc):
@@ -229,7 +246,7 @@ class RstDocstringParser(DocstringParser):
             elif len(code_type_lines) == 0:
                 code_type = default_code_name
             else:
-                raise Exception(err_msg())
+                raise OradocError(err_msg())
             content_lines = list(dropwhile(
                 lambda l: self._blank(l) or l.startswith(tag_code_block), ls))
             block_start = bookend + (code_type or default_code_name)
@@ -240,7 +257,7 @@ RST_KEY = "rst"
 STYLERS = {RST_KEY: RstDocstringParser()}
 
 
-class UnknownParserError(OradocleError):
+class UnknownParserError(OradocError):
     """ Exception for request of unsupported parsing strategy. """
 
     def __init__(self, name):

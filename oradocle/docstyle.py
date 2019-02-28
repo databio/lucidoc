@@ -1,7 +1,7 @@
 """ Docstring styling """
 
 import abc
-from .exceptions import OradocleError
+from .exceptions import OradocError
 
 __author__ = "Vince Reuter"
 __email__ = "vreuter@virginia.edu"
@@ -42,7 +42,7 @@ STYLERS = {
 }
 
 
-class UnknownStylerError(OradocleError):
+class UnknownStylerError(OradocError):
     """ Exception for request of unsupported styling strategy. """
 
     def __init__(self, name):

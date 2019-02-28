@@ -12,6 +12,7 @@ import sys
 from .helpers import *
 from .docstyle import get_styler, STYLERS
 from .docparse import get_parser
+from .exceptions import OradocError
 
 
 module_header = "# Package {} Documentation\n"
@@ -108,13 +109,33 @@ def doc_class(cls, docstr_parser):
     if not isinstance(cls, type):
         raise TypeError(_type_err_message(type, cls))
 
+    # Arbiter of whether a class member should be documented.
     def use_obj(name, _):
         return _unprotected(name)
 
+    cls_doc = [class_header.format(cls.__name__)]
     class_docstr = pydoc.inspect.getdoc(cls)
+    if class_docstr:
+        parsed_clsdoc = docstr_parser(class_docstr)
+        parsed_clsdoc.desc and cls_doc.append(parsed_clsdoc.desc)
+        param_tag_lines = ["- `{}` `{}`: {}".format(t.typename, t.name, t.description) for t in parsed_clsdoc.params]
+        err_tag_lines = ["- `{}`: {}".format(t.typename, t.description) for t in parsed_clsdoc.raises]
+        block_lines = []
+        if param_tag_lines:
+            block_lines.append("**Parameters:**\n")
+            block_lines.extend(param_tag_lines)
+            block_lines.append("\n")
+        if parsed_clsdoc.returns:
+            raise OradocError("Class docstring has a return value: {}".
+                              format(parsed_clsdoc.returns))
+        if err_tag_lines:
+            block_lines.append("**Raises:**\n")
+            block_lines.extend(err_tag_lines)
+            block_lines.append("\n")
+        block = "\n".join(block_lines)
+        cls_doc.extend([parsed_clsdoc.desc + "\n", block])
 
     #cls_doc = [class_header.format(cls.__name__), style_docstr(class_docstr)]
-    cls_doc = [class_header.format(cls.__name__), class_docstr]
     func_docs = _proc_objs(
         #cls, lambda f: doc_callable(f, docstr_parser, style_docstr),
         cls, lambda f: doc_callable(f, docstr_parser),
@@ -174,7 +195,6 @@ def doc_callable(f, docstr_parser):
         param_tags = docstr_parser.params(ds)
         ret_tag = docstr_parser.returns(ds)
         err_tags = docstr_parser.raises(ds)
-        assert isinstance(err_tags, list), "Not a list: {}".format(type(err_tags))
         param_tag_lines = ["- `{}` `{}`: {}".format(t.typename, t.name, t.description) for t in param_tags]
         err_tag_lines = ["- `{}`: {}".format(t.typename, t.description) for t in err_tags]
         block_lines = []
