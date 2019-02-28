@@ -148,8 +148,7 @@ class RstDocstringParser(DocstringParser):
         desc = head
         if detail_lines:
             desc += ("\n\n" + "\n".join(detail_lines))
-        post_desc = list(filterfalse(
-            self._blank, dropwhile(lambda l: not self._is_tag_start(l), ls2)))
+        post_desc = list(dropwhile(lambda l: not self._is_tag_start(l), ls2))
 
         raw_tag_blocks = []
         if post_desc and self._is_tag_start(post_desc[0]):
@@ -170,9 +169,18 @@ class RstDocstringParser(DocstringParser):
         else:
             first_non_tag_index = 0
 
+        # DEBUG
+        print("POST DESC: {}".format(post_desc))
+        print("DOCSTRING LINES:")
+        for i, l in enumerate(ds.split("\n")):
+            print("{}: {}".format(i, l))
+        print("FIRST NON TAG INDEX: {}".format(first_non_tag_index))
+
         ex_lines = self._parse_example_lines(
             [] if first_non_tag_index is None
             else post_desc[first_non_tag_index:])
+
+        print("{} EXAMPLE LINES: {}".format(len(ex_lines or []), ex_lines))
 
         tags = [self._get_tag(chunk) for chunk in raw_tag_blocks]
         par, ret, err = [], [], []

@@ -146,6 +146,12 @@ def doc_class(cls, docstr_parser, render_tag):
             block_lines.append("**Raises:**\n")
             block_lines.extend(err_tag_lines)
             block_lines.append("\n")
+        if parsed_clsdoc.example:
+            if not isinstance(parsed_clsdoc.example, list):
+                raise TypeError("Example lines are {}, not list".format(type(parsed_clsdoc.example)))
+            block_lines.append("**Example(s)**\n")
+            block_lines.extend(parsed_clsdoc.example)
+            block_lines.append("\n")
         block = "\n".join(block_lines)
         cls_doc.extend([parsed_clsdoc.desc + "\n", block])
 
