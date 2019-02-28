@@ -302,6 +302,39 @@ def _unprotected(name):
     return not name.startswith("_")
 
 
+def get_module_paths(root, subs=None):
+    """
+    Get dotted paths to modules to document.
+
+    :param str root: filepath to from which to begin module search
+    :param Iterable[str] subs: subpaths used so far
+    :return Iterable[stri]: collection of dotted paths to modules to document
+    """
+
+    if not os.path.isdir(root):
+        raise OradocError("Package root path isn't a folder: {}".format(root))
+
+    _, pkgname = os.path.split(root)
+
+    mod_file_paths = []
+
+    def make_mod_path(p, priors):
+        return ".".join(priors + [os.path.splitext(os.path.split(p)[1])[0]])
+
+    for r, ds, fs in os.walk(root):
+        mod_file_paths.extend(map(lambda f: os.path.join(r, f), fs))
+        for d in ds:
+            if d.startswith("_"):
+                continue
+            mod_file_paths.extend(get_module_paths(os.path.join(r, d)))
+
+    def keep(p):
+        _, fn = os.path.split(p)
+        return fn.endswith(".py") and not fn.startswith("_")
+
+    return list(map(make_mod_path, filter(keep, mod_file_paths)))
+
+
 def main():
     """ Main workflow """
     opts = _parse_args(sys.argv[1:])
