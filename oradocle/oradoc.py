@@ -79,16 +79,22 @@ def doc_module(mod, docstr_parser, render_tag, style_docstr):
     if mod.__doc__:
         output.append(mod.__doc__)
     targets = _get_targets(mod)
+    print(os.linesep.join(["All doc targets:"] + [n for n, _ in targets]))
+    classes, functions = [], []
     for n, t in targets:
-        if inspect.isfunction(t) and not _unprotected(n):
+        if inspect.isfunction(t) and _unprotected(n):
+            functions.append(t)
             #doc_chunks = doc_callable(t, docstr_parser, style_docstr)
-            doc_chunks = doc_callable(t, docstr_parser, render_tag)
         elif inspect.isclass(t) and _unprotected(n):
+            classes.append(t)
             #doc_chunks = doc_class(t, docstr_parser, style_docstr)
-            doc_chunks = doc_class(t, docstr_parser, render_tag)
         else:
+            print("Skipping: {}".format(n))
             continue
-        output.extend(doc_chunks)
+    for doc_obj in classes:
+        output.extend(doc_class(doc_obj, docstr_parser, render_tag))
+    for doc_obj in functions:
+        output.extend(doc_callable(doc_obj, docstr_parser, render_tag))
     return "\n".join(str(x) for x in output)
 
 
@@ -124,6 +130,8 @@ def doc_class(cls, docstr_parser, render_tag):
     # Arbiter of whether a class member should be documented.
     def use_obj(name, _):
         return _unprotected(name)
+
+    print("Processing class: {}".format(cls.__name__))
 
     cls_doc = [class_header.format(cls.__name__)]
     class_docstr = pydoc.inspect.getdoc(cls)
@@ -201,6 +209,9 @@ def doc_callable(f, docstr_parser, render_tag):
         raise TypeError(_type_err_message(callable, f))
 
     n = f.__name__
+
+    print("Processing function: {}".format(n))
+
     head = function_header.format(n.replace('_', '\\_'))
     signature = "```python\ndef {}{}:\n```\n".format(
         n, pydoc.inspect.formatargspec(*pydoc.inspect.getargspec(f)))
