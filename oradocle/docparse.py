@@ -77,29 +77,38 @@ class RstDocstringParser(DocstringParser):
 
     def description(self, ds):
         name = "desc"
-        return self._pretest(ds, name) or self._parse(ds, name)
+        return getattr(self._last_seen, name) if self._cached(ds) else \
+            self._parse(ds, name)
 
     def params(self, ds):
         name = "params"
-        return self._pretest(ds, name) or self._parse(ds, name)
+        return getattr(self._last_seen, name) if self._cached(ds) else \
+            self._parse(ds, name)
 
     def returns(self, ds):
         name = "returns"
-        return self._pretest(ds, name) or self._parse(ds, name)
+        return getattr(self._last_seen, name) if self._cached(ds) else \
+            self._parse(ds, name)
 
     def raises(self, ds):
         name = "raises"
-        return self._pretest(ds, name) or self._parse(ds, name)
+        return getattr(self._last_seen, name) if self._cached(ds) else \
+            self._parse(ds, name)
 
     def example(self, ds):
         name = "example"
-        return self._pretest(ds, name) or self._parse(ds, name)
+        return getattr(self._last_seen, name) if self._cached(ds) else \
+            self._parse(ds, name)
 
     def _cached(self, ds):
+        # DEBUG
+        if self._last_seen is None:
+            return False
+        print("Checking CACHE")
+        print("DOCSTRING: {}".format(ds))
+        print("CURR: {}".format(self._last_seen))
+        print("equal?: {}".format(self._last_seen.doc == ds))
         return self._last_seen is not None and self._last_seen.doc == ds
-
-    def _pretest(self, ds, name):
-        return getattr(self._last_seen, name) if self._cached(ds) else None
 
     @staticmethod
     def _is_tag_start(l):
@@ -174,11 +183,11 @@ class RstDocstringParser(DocstringParser):
             decl_line = chunk[0]
         except IndexError:
             raise Exception("Empty tag chunk")
-        tag = self._parse_tag_start(decl_line)
+        tag_type, args = self._parse_tag_start(decl_line)
         if len(chunk) > 1:
-            desc = tag.description if isinstance(tag.description, list) \
-                else [tag.description]
-            tag.description = desc + [l.lstrip() for l in chunk[1:]]
+            desc = args[-1] if isinstance(args[-1], list) else [args[-1]]
+            args[-1] = desc + desc + [l.lstrip() for l in chunk[1:]]
+        tag = tag_type(*args)
         return tag
 
     def _parse_tag_start(self, line):
@@ -201,7 +210,7 @@ class RstDocstringParser(DocstringParser):
         else:
             typename = " ".join(left_parts[0].split(" ")[1:])
             args = [typename, desc]
-        return tt(*args)
+        return tt, args
 
     def _parse_example_lines(self, ls):
         """ Parse the example portion of a docstring. """
