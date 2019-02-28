@@ -180,7 +180,6 @@ def _get_class_docstring(cls):
                          "present for {}".format(cls.__name__))
 
 
-#def doc_callable(f, docstr_parser, style_docstr):
 def doc_callable(f, docstr_parser, render_tag):
     """
     For single function get text components for Markdown documentation.
@@ -209,29 +208,24 @@ def doc_callable(f, docstr_parser, render_tag):
     res = [head]
     ds = pydoc.inspect.getdoc(f)
     if ds:
-        #desc_text, tags_text = docstr_parser.split_docstring(ds)
-        #block = style_docstr(tags_text)
-        desc_text = docstr_parser.description(ds)
-        param_tags = docstr_parser.params(ds)
-        ret_tag = docstr_parser.returns(ds)
-        err_tags = docstr_parser.raises(ds)
-        param_tag_lines = ["- `{}` `{}`: {}".format(t.typename, t.name, t.description) for t in param_tags]
-        err_tag_lines = ["- `{}`: {}".format(t.typename, t.description) for t in err_tags]
+        parsed = docstr_parser(ds)
+        param_tag_lines = [render_tag(t) for t in parsed.params]
+        err_tag_lines = [render_tag(t) for t in parsed.raises]
         block_lines = []
         if param_tag_lines:
             block_lines.append("**Parameters:**\n")
             block_lines.extend(param_tag_lines)
             block_lines.append("\n")
-        if ret_tag:
+        if parsed.returns:
             block_lines.append("**Returns:**\n")
-            block_lines.append("{}: {}".format(ret_tag.typename, ret_tag.description))
+            block_lines.append(render_tag(parsed.returns))
             block_lines.append("\n")
         if err_tag_lines:
             block_lines.append("**Raises:**\n")
             block_lines.extend(err_tag_lines)
             block_lines.append("\n")
         block = "\n".join(block_lines)
-        res.extend([desc_text, signature, block])
+        res.extend([docstr_parser.description(ds), signature, block])
     else:
         res.append(signature)
     res.append("\n")
