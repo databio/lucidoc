@@ -169,18 +169,9 @@ class RstDocstringParser(DocstringParser):
         else:
             first_non_tag_index = 0
 
-        # DEBUG
-        print("POST DESC: {}".format(post_desc))
-        print("DOCSTRING LINES:")
-        for i, l in enumerate(ds.split("\n")):
-            print("{}: {}".format(i, l))
-        print("FIRST NON TAG INDEX: {}".format(first_non_tag_index))
-
         ex_lines = self._parse_example_lines(
             [] if first_non_tag_index is None
             else post_desc[first_non_tag_index:])
-
-        print("{} EXAMPLE LINES: {}".format(len(ex_lines or []), ex_lines))
 
         tags = [self._get_tag(chunk) for chunk in raw_tag_blocks]
         par, ret, err = [], [], []
@@ -233,6 +224,7 @@ class RstDocstringParser(DocstringParser):
         except IndexError:
             return None
 
+        ex_section_start = ":Example:"
         tag_code_block = ".. code-block::"
         default_code_name = "console"
         bookend = "```"
@@ -242,7 +234,7 @@ class RstDocstringParser(DocstringParser):
 
         if head.startswith(bookend):
             return ls
-        elif head.startswith(":Example:"):
+        elif head.startswith(ex_section_start):
             code_type_lines = list(takewhile(
                 lambda l: not self._blank(l), dropwhile(self._blank, ls[1:])))
             if len(code_type_lines) == 1:
@@ -251,8 +243,9 @@ class RstDocstringParser(DocstringParser):
                 code_type = default_code_name
             else:
                 raise OradocError(err_msg())
-            content_lines = list(dropwhile(
-                lambda l: self._blank(l) or l.startswith(tag_code_block), ls))
+            in_section_head = lambda l: self._blank(l) or \
+                l.startswith(tag_code_block) or l.startswith(":Example:")
+            content_lines = list(dropwhile(in_section_head, ls))
             block_start = bookend + (code_type or default_code_name)
             return [block_start] + [l.lstrip() for l in content_lines] + [bookend]
 
