@@ -39,8 +39,8 @@ def _parse_args(cmdl):
 
     # Optional
     parser.add_argument(
-        "--append", action="store_true",
-        help="Indicate that new docs should be appended to given file")
+        "--skip-module-docstring", action="store_true",
+        help="Indicate that module docstring should be omitted")
     parser.add_argument(
         "-O", "--output",
         help="Path to output file")
@@ -48,7 +48,7 @@ def _parse_args(cmdl):
     return parser.parse_args(cmdl)
 
 
-def doc_module(mod, docstr_parser, render_tag):
+def doc_module(mod, docstr_parser, render_tag, no_mod_docstr=False):
     """
     Get large block of Markdown-formatted documentation of a module
 
@@ -58,10 +58,11 @@ def doc_module(mod, docstr_parser, render_tag):
         parsed from a docstring; the argument should be total. In other words,
         each potential type of tag that may be passed to it as an argument
         should be accounted for in the implementation.
+    :param bool no_mod_docstr: skip module-level docstring
     :return str: Large block of Markdown-formatted documentation of a module.
     """
     output = [module_header.format(mod.__name__)]
-    if mod.__doc__:
+    if mod.__doc__ and not no_mod_docstr:
         output.append(mod.__doc__)
     targets = _get_targets(mod)
     print(os.linesep.join(["All doc targets:"] + [n for n, _ in targets]))
@@ -305,7 +306,7 @@ def get_module_paths(root, subs=None):
 """
 
 
-def run_oradoc(pkg, parse_style, outfile):
+def run_oradoc(pkg, parse_style, outfile, no_mod_docstr=False):
     try:
         sys.path.append(os.getcwd())
         # Attempt import
@@ -319,7 +320,7 @@ def run_oradoc(pkg, parse_style, outfile):
     else:
         show_tag = MdTagRenderer()
         parse = get_parser(parse_style)
-        doc = doc_module(mod, parse, show_tag)
+        doc = doc_module(mod, parse, show_tag, no_mod_docstr)
         if outfile:
             outdir = os.path.dirname(outfile)
             if outdir and not os.path.isdir(outdir):
@@ -335,7 +336,8 @@ def run_oradoc(pkg, parse_style, outfile):
 def main():
     """ Main workflow """
     opts = _parse_args(sys.argv[1:])
-    run_oradoc(opts.pkgpath, opts.parse, opts.output)
+    run_oradoc(opts.pkgpath, opts.parse, opts.output,
+               opts.skip_module_docstring)
     
 
 if __name__ == '__main__':
