@@ -52,22 +52,13 @@ def doc_module(mod, docstr_parser, render_tag):
     """
     Get large block of Markdown-formatted documentation of a module
 
-    Parameters
-    ----------
-    mod : module
-        Module to document in Markdown.
-    docstr_parser : oradocle.DocstringParser
-        How to parse a docstring.
-    render_tag : callable(oradoc.DocTag) -> str
-        How to render an individual tag from a docstring. The implementation in
-        the object passed as an argument should handle each type of DocTag that
-        may be passed as an argument when this object is called.
-
-    Returns
-    -------
-    str
-        Large block of Markdown-formatted documentation of a module.
-
+    :param module mod: module to document in Markdown.
+    :param oradocle.DocstringParser docstr_parser: how to parse a docstring.
+    :param callable(oradocle.DocTag) -> str render_tag: how to render a tag
+        parsed from a docstring; the argument should be total. In other words,
+        each potential type of tag that may be passed to it as an argument
+        should be accounted for in the implementation.
+    :return str: Large block of Markdown-formatted documentation of a module.
     """
     output = [module_header.format(mod.__name__)]
     if mod.__doc__:
@@ -94,23 +85,14 @@ def doc_class(cls, docstr_parser, render_tag):
     """
     For single class definition, get text components for Markdown documentation.
 
-    Parameters
-    ----------
-    cls : class
-        Class to document with Markdown
-    docstr_parser : oradocle.DocstringParser
-        How to parse a docstring.
-    render_tag : callable(oradoc.DocTag) -> str
-        How to render an individual tag from a docstring. The implementation in
-        the object passed as an argument should handle each type of DocTag that
+    :param class cls: class to document with Markdown
+    :param oradocle.DocstringParser docstr_parser: How to parse a docstring.
+    :param callable(oradocle.DocTag) -> str render_tag: how to render an
+        individual tag from a docstring. The implementation in the object
+        passed as an argument should handle each type of DocTag that
         may be passed as an argument when this object is called.
-
-    Returns
-    -------
-    list of str
-        Text chunks constituting Markdown documentation for single class
-        definition.
-
+    :return list[str]: text chunks constituting Markdown documentation for
+        single class definition.
     """
 
     # TODO: handle parse of __init__ as alternative/supplement to class docstring.
@@ -131,8 +113,6 @@ def doc_class(cls, docstr_parser, render_tag):
         parsed_clsdoc.desc and cls_doc.append(parsed_clsdoc.desc)
         param_tag_lines = [render_tag(t) for t in parsed_clsdoc.params]
         err_tag_lines = [render_tag(t) for t in parsed_clsdoc.raises]
-        #param_tag_lines = ["- `{}` `{}`: {}".format(t.typename, t.name, t.description) for t in parsed_clsdoc.params]
-        #err_tag_lines = ["- `{}`: {}".format(t.typename, t.description) for t in parsed_clsdoc.raises]
         block_lines = []
         if param_tag_lines:
             block_lines.append("**Parameters:**\n")
@@ -186,7 +166,7 @@ def doc_callable(f, docstr_parser, render_tag):
         Function to document with Markdown
     docstr_parser : oradocle.DocstringParser
         How to parse a docstring.
-    render_tag : callable(oradoc.DocTag) -> str
+    render_tag : callable(oradocle.DocTag) -> str
         How to render an individual tag from a docstring. The implementation in
         the object passed as an argument should handle each type of DocTag that
         may be passed as an argument when this object is called.
@@ -239,17 +219,10 @@ def _get_targets(mod):
     """
     Determine given module's targets for documentation.
 
-    Parameters
-    ----------
-    mod : module
-        Module for which documentation targets should be found
-
-    Returns
-    -------
-    Sequence of (str, object)
-        (Ordered) collection of pairs--in which first component is object name
-        and second is object itself--for documentation.
-
+    :param module mod: module for which documentation targets should be found
+    :return Sequence[(str, object)]: (Ordered) collection of pairs for
+        documentation, in which first component is object name and second is
+        object itself.
     """
     try:
         exports = mod.__all__
@@ -271,23 +244,15 @@ def _proc_objs(root, proc, select=None, pred=None):
     """
     Process selected objects, within a "root" object, that satisfy a predicate.
 
-    Parameters
-    ----------
-    root : object
-        The object from which to select contained objects.
-    proc : function(object) -> Iterable of str
-        How to process an individual subobject
-    select : function(object) -> bool
-        How to select subobjects from the root object, optional; this is passed
-        as the predicate to inspect.getmembers
-    pred : function(str, object) -> bool
-        Additional filter for selected objects
-
-    Returns
-    -------
-    list of str
-        Collection of documentation chunks
-
+    :param object root: the object from which to select contained objects
+    :param function(object) -> Iterable[str] proc: how to process an individual
+        subobject
+    :param function(object) -> bool select: how to select subobjects from the
+        root object, optional; this is passed as the predicate to
+        inspect.getmembers
+    :param callable(str, object) -> bool pred: Additional filter for selected
+        objects
+    :return list[str]: collection of documentation chunks
     """
     pred = pred or (lambda _1, _2: True)
     return list(itertools.chain(*[
@@ -346,8 +311,8 @@ def run_oradoc(pkg, parse_style, outfile):
         # Attempt import
         mod = pydoc.safeimport(pkg)
         if mod is None:
-            print("ERROR -- module not found: {}".format(pkg))
-            raise SystemExit
+            raise OradocError("ERROR -- Target object for documentation not "
+                              "found: {}".format(pkg))
     except pydoc.ErrorDuringImport:
         print("Error while trying to import module {}".format(pkg))
         raise
