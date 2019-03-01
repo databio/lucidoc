@@ -111,7 +111,7 @@ def doc_class(cls, docstr_parser, render_tag):
     class_docstr = pydoc.inspect.getdoc(cls)
     if class_docstr:
         parsed_clsdoc = docstr_parser(class_docstr)
-        parsed_clsdoc.desc and cls_doc.append(parsed_clsdoc.desc)
+        parsed_clsdoc.desc and cls_doc.append(parsed_clsdoc.desc + "\n")
         param_tag_lines = [render_tag(t) for t in parsed_clsdoc.params]
         err_tag_lines = [render_tag(t) for t in parsed_clsdoc.raises]
         block_lines = []
@@ -133,7 +133,7 @@ def doc_class(cls, docstr_parser, render_tag):
             block_lines.extend(parsed_clsdoc.example)
             block_lines.append("\n")
         block = "\n".join(block_lines)
-        cls_doc.extend([parsed_clsdoc.desc + "\n", block])
+        cls_doc.append(block)
 
     func_docs = _proc_objs(
         cls,
