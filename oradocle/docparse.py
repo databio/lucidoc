@@ -137,12 +137,21 @@ class RstDocstringParser(DocstringParser):
     def _parse(self, ds, name=None):
         lines = ds.split(os.linesep)
 
-        try:
-            head = lines[0]
-        except IndexError:
-            raise OradocError("Empty docstring")
+        def seek_past_head(ls):
+            h = []
+            for i, l in enumerate(ls):
+                if self._blank(l) or self._is_tag_start(l):
+                    return h, i
+                h.append(l)
+            else:
+                return h, len(ls)
 
-        ls1, ls2 = tee(lines[1:])
+        head, non_head_index = seek_past_head(lines)
+        if not head:
+            raise OradocError("Empty docstring")
+        head = " ".join(l.strip() for l in head)
+
+        ls1, ls2 = tee(lines[non_head_index:])
         detail_lines = list(filterfalse(
             self._blank, takewhile(lambda l: not self._is_tag_start(l), ls1)))
         desc = head
