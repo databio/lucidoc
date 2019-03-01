@@ -32,8 +32,8 @@ def _parse_args(cmdl):
 
     # Required
     parser.add_argument(
-        "module",
-        help="Name/dotted path of module to document")
+        "pkgpath",
+        help="Name/dotted path of package to document")
     parser.add_argument(
         "-P", "--parse", required=True,
         help="Name of parsing strategy for docstrings")
@@ -349,16 +349,16 @@ def get_module_paths(root, subs=None):
 def main():
     """ Main workflow """
     opts = _parse_args(sys.argv[1:])
-    modpath = opts.module
+    pkgpath = opts.pkgpath
     try:
         sys.path.append(os.getcwd())
         # Attempt import
-        mod = pydoc.safeimport(modpath)
+        mod = pydoc.safeimport(pkgpath)
         if mod is None:
-            print("ERROR -- module not found: {}".format(modpath))
+            print("ERROR -- module not found: {}".format(pkgpath))
             raise SystemExit
     except pydoc.ErrorDuringImport:
-        print("Error while trying to import module {}".format(modpath))
+        print("Error while trying to import module {}".format(pkgpath))
         raise
     else:
         show_tag = MdTagRenderer()
