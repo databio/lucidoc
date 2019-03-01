@@ -370,7 +370,7 @@ def run_oradoc(pkg, parse_style, outfile):
 def main():
     """ Main workflow """
     opts = _parse_args(sys.argv[1:])
-    workflow(opts.pkgpath, opts.parse, opts.output)
+    run_oradoc(opts.pkgpath, opts.parse, opts.output)
     
 
 if __name__ == '__main__':
