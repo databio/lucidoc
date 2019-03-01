@@ -11,7 +11,6 @@ import pydoc
 import sys
 from .helpers import *
 from .docparse import get_parser
-from .docstyle import get_styler, STYLERS
 from .doctags import MdTagRenderer
 from .exceptions import OradocError
 
@@ -21,7 +20,7 @@ class_header = "## Class {}"
 function_header = "### {}"
 
 
-__all__ = ["doc_class", "doc_callable", "doc_module"]
+__all__ = ["doc_class", "doc_callable", "doc_module", "run_oradoc"]
 
 
 def _parse_args(cmdl):
@@ -45,14 +44,11 @@ def _parse_args(cmdl):
     parser.add_argument(
         "-O", "--output",
         help="Path to output file")
-    parser.add_argument(
-        "-S", "--style", choices=list(STYLERS.keys()),
-        help="Name indicating which styler to use to render docstrings")
 
     return parser.parse_args(cmdl)
 
 
-def doc_module(mod, docstr_parser, render_tag, style_docstr):
+def doc_module(mod, docstr_parser, render_tag):
     """
     Get large block of Markdown-formatted documentation of a module
 
@@ -66,8 +62,6 @@ def doc_module(mod, docstr_parser, render_tag, style_docstr):
         How to render an individual tag from a docstring. The implementation in
         the object passed as an argument should handle each type of DocTag that
         may be passed as an argument when this object is called.
-    style_docstr : oradocle.DocstringStyler
-        How to style/render a docstring.
 
     Returns
     -------
@@ -84,10 +78,8 @@ def doc_module(mod, docstr_parser, render_tag, style_docstr):
     for n, t in targets:
         if inspect.isfunction(t) and _unprotected(n):
             functions.append(t)
-            #doc_chunks = doc_callable(t, docstr_parser, style_docstr)
         elif inspect.isclass(t) and _unprotected(n):
             classes.append(t)
-            #doc_chunks = doc_class(t, docstr_parser, style_docstr)
         else:
             print("Skipping: {}".format(n))
             continue
@@ -98,7 +90,6 @@ def doc_module(mod, docstr_parser, render_tag, style_docstr):
     return "\n".join(str(x) for x in output)
 
 
-#def doc_class(cls, docstr_parser, style_docstr):
 def doc_class(cls, docstr_parser, render_tag):
     """
     For single class definition, get text components for Markdown documentation.
@@ -163,13 +154,10 @@ def doc_class(cls, docstr_parser, render_tag):
         block = "\n".join(block_lines)
         cls_doc.extend([parsed_clsdoc.desc + "\n", block])
 
-    #cls_doc = [class_header.format(cls.__name__), style_docstr(class_docstr)]
     func_docs = _proc_objs(
-        #cls, lambda f: doc_callable(f, docstr_parser, style_docstr),
         cls, lambda f: doc_callable(f, docstr_parser, render_tag),
         pydoc.inspect.ismethod, use_obj)
     subcls_docs = _proc_objs(
-        #cls, lambda c: doc_class(c, docstr_parser, style_docstr),
         cls, lambda c: doc_class(c, docstr_parser, render_tag),
         pydoc.inspect.isclass, use_obj)
     return cls_doc + func_docs + subcls_docs
@@ -198,6 +186,10 @@ def doc_callable(f, docstr_parser, render_tag):
         Function to document with Markdown
     docstr_parser : oradocle.DocstringParser
         How to parse a docstring.
+    render_tag : callable(oradoc.DocTag) -> str
+        How to render an individual tag from a docstring. The implementation in
+        the object passed as an argument should handle each type of DocTag that
+        may be passed as an argument when this object is called.
 
     Returns
     -------
@@ -313,14 +305,15 @@ def _unprotected(name):
     return not name.startswith("_")
 
 
+"""
 def get_module_paths(root, subs=None):
-    """
+    """"""
     Get dotted paths to modules to document.
 
     :param str root: filepath to from which to begin module search
     :param Iterable[str] subs: subpaths used so far
     :return Iterable[stri]: collection of dotted paths to modules to document
-    """
+    """"""
 
     if not os.path.isdir(root):
         raise OradocError("Package root path isn't a folder: {}".format(root))
@@ -344,39 +337,41 @@ def get_module_paths(root, subs=None):
         return fn.endswith(".py") and not fn.startswith("_")
 
     return list(map(make_mod_path, filter(keep, mod_file_paths)))
+"""
 
 
-def main():
-    """ Main workflow """
-    opts = _parse_args(sys.argv[1:])
-    pkgpath = opts.pkgpath
+def run_oradoc(pkg, parse_style, outfile):
     try:
         sys.path.append(os.getcwd())
         # Attempt import
-        mod = pydoc.safeimport(pkgpath)
+        mod = pydoc.safeimport(pkg)
         if mod is None:
-            print("ERROR -- module not found: {}".format(pkgpath))
+            print("ERROR -- module not found: {}".format(pkg))
             raise SystemExit
     except pydoc.ErrorDuringImport:
-        print("Error while trying to import module {}".format(pkgpath))
+        print("Error while trying to import module {}".format(pkg))
         raise
     else:
         show_tag = MdTagRenderer()
-        parse = get_parser(opts.parse)
-        style = get_styler(opts.style)
-        doc = doc_module(mod, parse, show_tag, style)
-        if opts.output:
-            outdir = os.path.dirname(opts.output)
+        parse = get_parser(parse_style)
+        doc = doc_module(mod, parse, show_tag)
+        if outfile:
+            outdir = os.path.dirname(outfile)
             if outdir and not os.path.isdir(outdir):
                 os.makedirs(outdir)
-            msg, mode = ("Appending", 'a') if opts.append else ("Writing", 'w')
-            print("{} docs: {}".format(msg, opts.output))
-            with open(opts.output, mode) as f:
+            print("Writing docs: {}".format(outfile))
+            with open(outfile, 'w') as f:
                 f.write(doc)
             print("Done.")
         else:
             print(doc)
 
+
+def main():
+    """ Main workflow """
+    opts = _parse_args(sys.argv[1:])
+    workflow(opts.pkgpath, opts.parse, opts.output)
+    
 
 if __name__ == '__main__':
     main()
