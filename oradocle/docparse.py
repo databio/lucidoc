@@ -165,6 +165,7 @@ class RstDocstringParser(DocstringParser):
                 else:
                     curr_block.append(l)
             else:
+                raw_tag_blocks.append(curr_block)
                 first_non_tag_index = None
         else:
             first_non_tag_index = 0
