@@ -42,13 +42,17 @@ def _parse_args(cmdl):
         "--skip-module-docstring", action="store_true",
         help="Indicate that module docstring should be omitted")
     parser.add_argument(
+        "--inherited", action="store_true",
+        help="Include inherited members")
+    parser.add_argument(
         "-O", "--output",
         help="Path to output file")
 
     return parser.parse_args(cmdl)
 
 
-def doc_module(mod, docstr_parser, render_tag, no_mod_docstr=False):
+def doc_module(mod, docstr_parser, render_tag,
+               no_mod_docstr=False, include_inherited=False):
     """
     Get large block of Markdown-formatted documentation of a module
 
@@ -59,6 +63,7 @@ def doc_module(mod, docstr_parser, render_tag, no_mod_docstr=False):
         each potential type of tag that may be passed to it as an argument
         should be accounted for in the implementation.
     :param bool no_mod_docstr: skip module-level docstring
+    :param bool include_inherited: include inherited members
     :return str: Large block of Markdown-formatted documentation of a module.
     """
     output = [module_header.format(mod.__name__)]
@@ -76,13 +81,13 @@ def doc_module(mod, docstr_parser, render_tag, no_mod_docstr=False):
             print("Skipping: {}".format(n))
             continue
     for doc_obj in classes:
-        output.extend(doc_class(doc_obj, docstr_parser, render_tag))
+        output.extend(doc_class(doc_obj, docstr_parser, render_tag, include_inherited))
     for doc_obj in functions:
         output.extend(doc_callable(doc_obj, docstr_parser, render_tag))
     return "\n".join(str(x) for x in output)
 
 
-def doc_class(cls, docstr_parser, render_tag):
+def doc_class(cls, docstr_parser, render_tag, include_inherited):
     """
     For single class definition, get text components for Markdown documentation.
 
@@ -92,6 +97,7 @@ def doc_class(cls, docstr_parser, render_tag):
         individual tag from a docstring. The implementation in the object
         passed as an argument should handle each type of DocTag that
         may be passed as an argument when this object is called.
+    :param bool include_inherited: include inherited members
     :return list[str]: text chunks constituting Markdown documentation for
         single class definition.
     """
@@ -135,13 +141,35 @@ def doc_class(cls, docstr_parser, render_tag):
         block = "\n".join(block_lines)
         cls_doc.append(block)
 
+    # TODO: account for inherited properties, not just methods
+    eligible = lambda o: (pydoc.inspect.ismethod(o) or isinstance(o, property))
+
+    def inherited(f):
+        try:
+            parents = cls.__bases__
+        except AttributeError:
+            return False
+        for p in parents:
+            try:
+                if getattr(p, f.__name__) == f:
+                    return True
+            except AttributeError:
+                continue
+        return False
+
+    if include_inherited:
+        def use_as_fun(o):
+            return eligible(o)
+    else:
+        def use_as_fun(o):
+            return eligible(o) and (isinstance(o, property) or not inherited(o))
+
     func_docs = _proc_objs(
         cls,
         lambda n, f: doc_callable(f, docstr_parser, render_tag, name=n),
-        lambda o: (pydoc.inspect.ismethod(o) or isinstance(o, property)),
-        use_obj)
+        use_as_fun, use_obj)
     subcls_docs = _proc_objs(
-        cls, lambda c: doc_class(c, docstr_parser, render_tag),
+        cls, lambda c: doc_class(c, docstr_parser, render_tag, include_inherited),
         pydoc.inspect.isclass, use_obj)
     return cls_doc + func_docs + subcls_docs
 
@@ -321,7 +349,8 @@ def get_module_paths(root, subs=None):
 """
 
 
-def run_oradoc(pkg, parse_style, outfile, no_mod_docstr=False):
+def run_oradoc(pkg, parse_style, outfile,
+               no_mod_docstr=False, include_inherited=False):
     try:
         sys.path.append(os.getcwd())
         # Attempt import
@@ -335,7 +364,7 @@ def run_oradoc(pkg, parse_style, outfile, no_mod_docstr=False):
     else:
         show_tag = MdTagRenderer()
         parse = get_parser(parse_style)
-        doc = doc_module(mod, parse, show_tag, no_mod_docstr)
+        doc = doc_module(mod, parse, show_tag, no_mod_docstr, include_inherited)
         if outfile:
             outdir = os.path.dirname(outfile)
             if outdir and not os.path.isdir(outdir):
