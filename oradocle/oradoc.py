@@ -136,8 +136,10 @@ def doc_class(cls, docstr_parser, render_tag):
         cls_doc.extend([parsed_clsdoc.desc + "\n", block])
 
     func_docs = _proc_objs(
-        cls, lambda f: doc_callable(f, docstr_parser, render_tag),
-        pydoc.inspect.ismethod, use_obj)
+        cls,
+        lambda n, f: doc_callable(f, docstr_parser, render_tag, name=n),
+        lambda o: (pydoc.inspect.ismethod(o) or isinstance(o, property)),
+        use_obj)
     subcls_docs = _proc_objs(
         cls, lambda c: doc_class(c, docstr_parser, render_tag),
         pydoc.inspect.isclass, use_obj)
@@ -157,37 +159,42 @@ def _get_class_docstring(cls):
                          "present for {}".format(cls.__name__))
 
 
-def doc_callable(f, docstr_parser, render_tag):
+def doc_callable(f, docstr_parser, render_tag, name=None):
     """
     For single function get text components for Markdown documentation.
 
-    Parameters
-    ----------
-    f : callable
-        Function to document with Markdown
-    docstr_parser : oradocle.DocstringParser
-        How to parse a docstring.
-    render_tag : callable(oradocle.DocTag) -> str
-        How to render an individual tag from a docstring. The implementation in
-        the object passed as an argument should handle each type of DocTag that
+    :param callable | property f: function or property to document
+    :param oradocle.DocstringParser docstr_parser: How to parse a docstring.
+    :param callable(oradocle.DocTag) -> str render_tag: how to render an
+        individual tag from a docstring. The implementation in the object
+        passed as an argument should handle each type of DocTag that
         may be passed as an argument when this object is called.
-
-    Returns
-    -------
-    list of str
-        Text chunks constituting Markdown documentation for single function.
+    :param str name: name of object being documented; pass directly for prop.
+    :return list[str]: text chunks constituting Markdown documentation for
+        single function.
 
     """
     if not is_callable_like(f):
         raise TypeError(_type_err_message(callable, f))
 
-    n = f.__name__
+    if name:
+        n = name
+    else:
+        try:
+            n = f.__name__
+        except AttributeError:
+            raise OradocError("No name for object of {}; explicitly pass name "
+                              "if documenting a property".format(type(f)))
 
     print("Processing function: {}".format(n))
 
     head = function_header.format(n.replace('_', '\\_'))
-    signature = "```python\ndef {}{}:\n```\n".format(
-        n, pydoc.inspect.formatargspec(*pydoc.inspect.getargspec(f)))
+
+    try:
+        pars = pydoc.inspect.formatargspec(*pydoc.inspect.getargspec(f))
+    except TypeError:
+        pars = None
+    signature = "```python\ndef {}{}:\n```\n".format(n, pars or "")
 
     res = [head]
     ds = pydoc.inspect.getdoc(f)
@@ -256,8 +263,16 @@ def _proc_objs(root, proc, select=None, pred=None):
     :return list[str]: collection of documentation chunks
     """
     pred = pred or (lambda _1, _2: True)
+    nargs = len(inspect.getargspec(proc).args)
+    if nargs == 1:
+        do = lambda _, o: proc(o)
+    elif nargs == 2:
+        do = lambda n, o: proc(n, o)
+    else:
+        raise ValueError("Processing function should take exactly 1 or 2 "
+                         "arguments, not {}".format(nargs))
     return list(itertools.chain(*[
-        proc(o) for n, o in inspect.getmembers(root, select) if pred(n, o)]))
+        do(n, o) for n, o in inspect.getmembers(root, select) if pred(n, o)]))
 
 
 def _type_err_message(exp_type, obs_value):

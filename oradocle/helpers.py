@@ -26,4 +26,4 @@ def is_callable_like(obj):
     :return bool: Whether the given object appears to be a callable.
 
     """
-    return hasattr(obj, "__call__")
+    return isinstance(obj, property) or hasattr(obj, "__call__")
