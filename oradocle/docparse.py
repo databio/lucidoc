@@ -261,14 +261,14 @@ class RstDocstringParser(DocstringParser):
 
 
 RST_KEY = "rst"
-STYLERS = {RST_KEY: RstDocstringParser()}
+PARSERS = {RST_KEY: RstDocstringParser()}
 
 
 class UnknownParserError(OradocError):
     """ Exception for request of unsupported parsing strategy. """
 
     def __init__(self, name):
-        msg = "{}; choose one: {}".format(name, ", ".join(STYLERS.keys()))
+        msg = "{}; choose one: {}".format(name, ", ".join(PARSERS.keys()))
         super(UnknownParserError, self).__init__(msg)
 
 
@@ -283,6 +283,6 @@ def get_parser(name):
         mapped to a parser.
     """
     try:
-        return STYLERS[name]
+        return PARSERS[name]
     except KeyError:
         raise UnknownParserError(name)
