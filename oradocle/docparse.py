@@ -44,18 +44,45 @@ class DocstringParser(object):
 
     @abc.abstractmethod
     def description(self, ds):
+        """
+        Parse the description portion of a docstring.
+
+        :param str ds: docstring from which to parse description
+        :return str: description portion of docstring
+        """
         pass
 
     @abc.abstractmethod
     def params(self, ds):
+        """
+        Parse parameter tags from docstring.
+
+        :param str ds: docstring from which to parse parameter tags
+        :return Iterable[oradocle.ParTag]: (possibly empty) collection of
+            parameter tags parsed from the given docstring
+        """
         pass
 
     @abc.abstractmethod
     def returns(self, ds):
+        """
+        Parse parameter tags from docstring.
+
+        :param str ds: docstring from which to parse result tag
+        :return oradocle.RetTag | NoneType: (possibly empty) collection of
+            parameter tags parsed from the given docstring
+        """
         pass
 
     @abc.abstractmethod
     def raises(self, ds):
+        """
+        Parse parameter tags from docstring.
+
+        :param str ds: docstring from which to parse result tag
+        :return Iterable[oradocle.ErrTag]: (possibly empty) collection of
+            parameter tags parsed from the given docstring
+        """
         pass
 
 
@@ -63,55 +90,41 @@ class RstDocstringParser(DocstringParser):
     """ Parser for ReStructured text docstrings. """
 
     def __init__(self):
+        """ Set the most recently seen docstring parse result to null. """
         super(RstDocstringParser, self).__init__()
         self._last_seen = None
-
-    """
-    def header(self, ds):
-        try:
-            return self.description(ds)[0]
-        except IndexError:
-            raise OradocError("Empty docstring")
-    """
-
-    """
-    def detail(self, ds):
-        full_desc = self.description(ds)
-        return list(takewhile(
-            lambda l: not self._blank(l),
-            dropwhile(self._blank, full_desc.split(os.linesep)[1:])))
-    """
 
     def __call__(self, ds):
         return self._last_seen if self._cached(ds) else self._parse(ds)
 
     def description(self, ds):
-        name = "desc"
-        return getattr(self._last_seen, name) if self._cached(ds) else \
-            self._parse(ds, name)
+        return self._fetchparse(ds, "desc")
 
     def params(self, ds):
-        name = "params"
-        return getattr(self._last_seen, name) if self._cached(ds) else \
-            self._parse(ds, name)
+        return self._fetchparse(ds, "params")
 
     def returns(self, ds):
-        name = "returns"
-        return getattr(self._last_seen, name) if self._cached(ds) else \
-            self._parse(ds, name)
+        return self._fetchparse(ds, "returns")
 
     def raises(self, ds):
-        name = "raises"
-        return getattr(self._last_seen, name) if self._cached(ds) else \
-            self._parse(ds, name)
+        return self._fetchparse(ds, "raises")
 
     def example(self, ds):
-        name = "example"
+        """
+        Get the code example text from a docstring.
+
+        :param str ds: docstring from which to parse example
+        :return str: code example text from docstring
+        """
+        return self._fetchparse(ds, "example")
+
+    def _fetchparse(self, ds, name):
+        """ Return cached result if available, else parse then cache. """
         return getattr(self._last_seen, name) if self._cached(ds) else \
             self._parse(ds, name)
 
     @staticmethod
-    def _blank(l):
+    def _is_blank(l):
         return l.strip() == ""
 
     def _cached(self, ds):
@@ -135,12 +148,13 @@ class RstDocstringParser(DocstringParser):
         return l.startswith(":")
 
     def _parse(self, ds, name=None):
+        """ Parse the description, examples, and tags from a docstring. """
         lines = ds.split(os.linesep)
 
         def seek_past_head(ls):
             h = []
             for i, l in enumerate(ls):
-                if self._blank(l) or self._is_tag_start(l):
+                if self._is_blank(l) or self._is_tag_start(l):
                     return h, i
                 h.append(l)
             else:
@@ -153,7 +167,7 @@ class RstDocstringParser(DocstringParser):
 
         ls1, ls2 = tee(lines[non_head_index:])
         detail_lines = list(filterfalse(
-            self._blank, takewhile(lambda l: not self._is_tag_start(l), ls1)))
+            self._is_blank, takewhile(lambda l: not self._is_tag_start(l), ls1)))
         desc = head
         if detail_lines:
             desc += ("\n\n" + "\n".join(detail_lines))
@@ -163,7 +177,7 @@ class RstDocstringParser(DocstringParser):
         if post_desc and self._is_tag_start(post_desc[0]):
             curr_block = []
             for i, l in enumerate(post_desc):
-                if self._blank(l):
+                if self._is_blank(l):
                     first_non_tag_index = i + 1
                     break
                 l = l.strip()
@@ -246,14 +260,14 @@ class RstDocstringParser(DocstringParser):
             return ls
         elif head.startswith(ex_section_start):
             code_type_lines = list(takewhile(
-                lambda l: not self._blank(l), dropwhile(self._blank, ls[1:])))
+                lambda l: not self._is_blank(l), dropwhile(self._is_blank, ls[1:])))
             if len(code_type_lines) == 1:
                 code_type = code_type_lines[0].lstrip(tag_code_block).strip()
             elif len(code_type_lines) == 0:
                 code_type = default_code_name
             else:
                 raise OradocError(err_msg())
-            in_section_head = lambda l: self._blank(l) or \
+            in_section_head = lambda l: self._is_blank(l) or \
                 l.startswith(tag_code_block) or l.startswith(":Example:")
             content_lines = list(dropwhile(in_section_head, ls))
             block_start = bookend + (code_type or default_code_name)
