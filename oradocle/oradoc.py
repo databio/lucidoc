@@ -1,7 +1,13 @@
 #!/usr/bin/env python
-# This script generates mkdocs friendly Markdown documentation from a python package.
-# It is based on the the following blog post by Christian Medina
-# https://medium.com/python-pandemonium/python-introspection-with-the-inspect-module-2c85d5aa5a48#.twcmlyack 
+"""
+Generate mkdocs-friendly API documentation for a Python package.
+
+This program parses docstrings from objects defined in a Python package and
+uses the information from those docstrings to generate mkdocs-friendly
+documentation in Markdown format. Essentially, therefore, it generates
+API documentation for the package.
+
+"""
 
 import argparse
 import inspect
@@ -32,9 +38,10 @@ def _parse_args(cmdl):
     # Required
     parser.add_argument(
         "pkgpath",
-        help="Name/dotted path of package to document")
+        help="Name/dotted path to package to document, i.e. what you'd type as "
+             "the target for an import statement")
     parser.add_argument(
-        "-P", "--parse", required=True,
+        "-P", "--parse", choices=[], required=True,
         help="Name of parsing strategy for docstrings")
 
     # Optional
