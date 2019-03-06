@@ -26,6 +26,7 @@ ParsedDocstringResult = namedtuple(
     ["doc", "desc", "params", "returns", "raises", "example"])
 
 
+
 class DocstringParser(object):
     """ Entity responsible for parsing docstrings """
 

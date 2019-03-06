@@ -7,6 +7,24 @@ __author__ = "Vince Reuter"
 __email__ = "vreuter@virginia.edu"
 
 
+@pytest.fixture(scope="function")
+def headline():
+    return "This is a short description."
+
+
+@pytest.fixture(scope="function")
+def detail_lines():
+    return ["This description provides more detail",
+            "split over multiple lines.",
+            "It may or may not have intervening or flanking blank line(s)."]
+
+
+BOOL_PARAM = ":param bool flag: "
+FUNC_PARAM = ":param function(int, int) -> float"
+ITER_PARAM = ":param Iterable[str]"
+
+
+
 @pytest.mark.skip("Not implemented")
 def test_no_tags():
     """ When no tags are present, none are parsed. """
