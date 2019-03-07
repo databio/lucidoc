@@ -7,25 +7,30 @@ __author__ = "Vince Reuter"
 __email__ = "vreuter@virginia.edu"
 
 
+HEADLINE = "This is a short description."
+DETAIL_LINES = ["This description provides more detail",
+                "split over multiple lines.",
+                "It may or may not have intervening or flanking blank line(s)."]
+
+
 @pytest.fixture(scope="function")
 def headline():
-    return "This is a short description."
+    return HEADLINE
 
 
 @pytest.fixture(scope="function")
 def detail_lines():
-    return ["This description provides more detail",
-            "split over multiple lines.",
-            "It may or may not have intervening or flanking blank line(s)."]
+    return DETAIL_LINES
 
 
 BOOL_PARAM = ":param bool flag: "
 FUNC_PARAM = ":param function(int, int) -> float"
-ITER_PARAM = ":param Iterable[str]"
-
+ITER_PARAM = ":param Iterable[Mapping[str, function(Iterable[float]) -> float]]"
+UNION_PARAM = ":param str | Iterable[str]"
 
 
 @pytest.mark.skip("Not implemented")
+@pytest.mark.parametrize("parts", [])
 def test_no_tags():
     """ When no tags are present, none are parsed. """
     pass

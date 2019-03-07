@@ -21,6 +21,9 @@ __all__ = ["DocstringParser", "ParsedDocstringResult",
            "RstDocstringParser", "get_parser"]
 
 
+RST_EXAMPLE_TAG = ":Example:"
+
+
 ParsedDocstringResult = namedtuple(
     "ParsedDocstringResult",
     ["doc", "desc", "params", "returns", "raises", "example"])
@@ -249,7 +252,7 @@ class RstDocstringParser(DocstringParser):
         except IndexError:
             return None
 
-        ex_section_start = ":Example:"
+        ex_section_start = RST_EXAMPLE_TAG
         tag_code_block = ".. code-block::"
         default_code_name = "console"
         bookend = "```"
@@ -269,7 +272,7 @@ class RstDocstringParser(DocstringParser):
             else:
                 raise OradocError(err_msg())
             in_section_head = lambda l: self._is_blank(l) or \
-                l.startswith(tag_code_block) or l.startswith(":Example:")
+                l.startswith(tag_code_block) or l.startswith(RST_EXAMPLE_TAG)
             content_lines = list(dropwhile(in_section_head, ls))
             block_start = bookend + (code_type or default_code_name)
             return [block_start] + [l.lstrip() for l in content_lines] + [bookend]
