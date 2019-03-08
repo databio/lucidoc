@@ -4,15 +4,16 @@ import itertools
 import pytest
 import oradocle
 
-from conftest import DESC_POOL, PARAM_POOL, RETURN_POOL, ERROR_POOL, CODE_POOL, \
-    SPACE_POOL, build_args_space
+from conftest import DESC_KEY, PAR_KEY, RET_KEY, ERR_KEY, EXS_KEY, DESC_POOL, \
+    PARAM_POOL, RETURN_POOL, ERROR_POOL, CODE_POOL, SPACE_POOL, build_args_space
 
 __author__ = "Vince Reuter"
 __email__ = "vreuter@virginia.edu"
 
 
 @pytest.mark.parametrize("pool",
-    build_args_space(allow_empty=False, params=None, returns=None, raises=None))
+    build_args_space(
+        allow_empty=False, **{PAR_KEY: None, RET_KEY: None, ERR_KEY: None}))
 def test_no_tags(pool, ds_spec, parser):
     """ When no tags are present, none are parsed. """
     # DEBUG
@@ -24,10 +25,27 @@ def test_no_tags(pool, ds_spec, parser):
     assert_exp_tag_count(ds, ds_spec, parser)
 
 
-@pytest.mark.skip("Not implemented")
-def test_only_params():
+@pytest.mark.parametrize("pool",
+    build_args_space(allow_empty=False,
+        **{DESC_KEY: None, RET_KEY: None, ERR_KEY: None, EXS_KEY: None}))
+def test_only_params(pool, ds_spec, parser):
     """ When only return tag is present, it's used. """
-    pass
+    # DEBUG
+    print("POOL:\n{}\n".format(
+        "\n".join("{}: {}".format(k, v) for k, v in pool.items())))
+    ds = ds_spec.render()
+    print("DS:\n{}".format(ds))
+    assert_exp_line_count(ds, ds_spec)
+    assert_exp_tag_count(ds, ds_spec, parser)
+    desc = parser.description(ds)
+    assert desc is None or (desc == "")
+    ret = parser.returns(ds)
+    assert ret is None or (ret == [])
+    err = parser.raises(ds)
+    assert [] == err
+    par = parser.params(ds)
+    assert len(par) == len(pool[PAR_KEY])
+    assert all(isinstance(t, oradocle.ParTag) for t in par)
 
 
 @pytest.mark.skip("Not implemented")
@@ -92,4 +110,5 @@ def assert_exp_tag_count(ds, spec, parser):
     # DEBUG
     print("PARAMS: {}".format(parser.params(ds)))
     tags = parser.params(ds) + (parser.returns(ds) or []) + parser.raises(ds)
+    print("TAGS:\n{}".format("\n".join(str(t) for t in tags)))
     assert len(tags) == spec.exp_tag_count

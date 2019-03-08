@@ -20,7 +20,7 @@ DETAIL_LINES = ["This description provides more detail",
                 "It may or may not have intervening or flanking blank line(s)."]
 
 BOOL_PARAM = ":param bool flag: this quickly describes a flag"
-FUNC_PARAM = ":param function(int, int) -> float: this maps two ints to a float"
+FUNC_PARAM = ":param function(int, int) -> float func: this maps two ints to a float"
 ITER_PARAM = """:param Iterable[Mapping[str, function(Iterable[float]) -> float]] func_maps: 
     this is a longer description, with too much content to be described on just 
     one line.""".splitlines(False)
@@ -61,6 +61,7 @@ def powerset(items, nonempty=False):
             itertools.combinations(items, k)]
 
 
+DESC_KEY = "description"
 PAR_KEY = "params"
 RET_KEY = "returns"
 ERR_KEY = "raises"
@@ -79,11 +80,10 @@ SPACE_POOL = [dict(zip(
 
 def build_args_space(allow_empty, **kwargs):
 
-    desc_key = "description"
     space_key = "spaces"
 
     defaults = OrderedDict([
-        (desc_key, DESC_POOL), (PAR_KEY, PARAM_POOL), (RET_KEY, RETURN_POOL),
+        (DESC_KEY, DESC_POOL), (PAR_KEY, PARAM_POOL), (RET_KEY, RETURN_POOL),
         (ERR_KEY, ERROR_POOL), (EXS_KEY, CODE_POOL), (space_key, SPACE_POOL)
     ])
 
@@ -176,14 +176,14 @@ class DocstringSpecification(object):
                         format(arg, type(arg)))
 
     @property
-    def all_tag_line_chunks(self):
+    def all_tag_texts(self):
         """ Collection in which each element is the lines for one tag. """
         return self.params + self.returns + self.raises
 
     @property
     def exp_tag_count(self):
         """ Expected number of tags to be rendered (and later parsed) """
-        return len(self.all_tag_line_chunks)
+        return len(self.all_tag_texts)
 
     @property
     def exp_line_count(self):
@@ -198,8 +198,9 @@ class DocstringSpecification(object):
         if self.headline and self.detail:
             n += 1    # Intervening blank line
         print("POST FIRST BLANK: {}".format(n))
+        print("ALL TAG TEXTS:\n{}".format(self.all_tag_texts))
         if self.has_tags:
-            n += sum(c.count("\n") - 1 for c in self.all_tag_line_chunks)
+            n += sum(tt.count("\n") + 1 for tt in self.all_tag_texts)
         print("POST HAS TAGS: {}".format(n))
         blank_lines_count = 0
         if self.has_tags and self.pre_tags_space and (self.headline or self.detail):
@@ -224,7 +225,7 @@ class DocstringSpecification(object):
     @property
     def has_tags(self):
         """ Whether any tags are specified. """
-        return len(self.all_tag_line_chunks) > 0
+        return len(self.all_tag_texts) > 0
 
     def render(self):
         """
@@ -236,7 +237,7 @@ class DocstringSpecification(object):
         detail = "\n".join(self.detail)
         desc_text = "{}\n\n{}".format(headline, detail) if headline and detail \
             else (headline or detail or "")
-        tags_text = "\n".join(self.all_tag_line_chunks)
+        tags_text = "\n".join(self.all_tag_texts)
         examples_text = "\n\n".join(self.examples)
         if desc_text and tags_text:
             before_examples = "{}{}{}".format(

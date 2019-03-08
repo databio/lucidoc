@@ -34,6 +34,10 @@ class DocTag(object):
         """
         return self._desc
 
+    def __str__(self):
+        return "{cn}({tn}: {d})".format(
+            cn=self.__class__.__name__, tn=self.typename, d=self.description)
+
 
 class ParTag(DocTag):
     """ Representation of a parameter tag in docstring """
@@ -57,6 +61,11 @@ class ParTag(DocTag):
         :return str: The parameter name for this tag
         """
         return self._name
+
+    def __str__(self):
+        return "{cn}({tn} {n}: {d})".format(
+            cn=self.__class__.__name__, tn=self.typename, n=self.name,
+            d=self.description)
 
 
 class RetTag(DocTag):

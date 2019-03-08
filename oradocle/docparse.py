@@ -191,8 +191,8 @@ class RstDocstringParser(DocstringParser):
                 else:
                     curr_block.append(l)
             else:
-                raw_tag_blocks.append(curr_block)
                 first_non_tag_index = None
+            curr_block and raw_tag_blocks.append(curr_block)
         else:
             first_non_tag_index = 0
 
@@ -201,6 +201,7 @@ class RstDocstringParser(DocstringParser):
             else post_desc[first_non_tag_index:])
 
         tags = [self._get_tag(chunk) for chunk in raw_tag_blocks]
+
         par, ret, err = [], [], []
         for t in tags:
             if isinstance(t, ParTag):
@@ -211,6 +212,7 @@ class RstDocstringParser(DocstringParser):
                 err.append(t)
             else:
                 raise TypeError("Unrecognized doc tag type: {}".format(type(t)))
+
         if len(ret) > 1:
             raise ValueError("Multiple ({}) returns tags: {}".
                              format(len(ret), ret))
