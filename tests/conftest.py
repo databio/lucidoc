@@ -107,7 +107,12 @@ def build_args_space(allow_empty, **kwargs):
 
     space = [combine_mappings(ps) for ps in
              itertools.product(*[get_pool(n) for n in defaults])]
-    return space if allow_empty else [p for p in space if any(p.values())]
+    if allow_empty:
+        return space
+    else:
+        def nonempty(m):
+            return any(filter(lambda v: not isinstance(v, bool), m.values()))
+        return list(filter(nonempty, space))
 
 
 def pytest_generate_tests(metafunc):
