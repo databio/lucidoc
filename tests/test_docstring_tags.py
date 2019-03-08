@@ -48,10 +48,17 @@ def test_only_params(pool, ds_spec, parser):
     assert all(isinstance(t, oradocle.ParTag) for t in par)
 
 
-@pytest.mark.skip("Not implemented")
-def test_only_returns():
+@pytest.mark.parametrize("pool", build_args_space(allow_empty=False,
+    **{DESC_KEY: None, PAR_KEY: None, ERR_KEY: None, EXS_KEY: None}))
+def test_only_returns(pool, ds_spec, parser):
     """ When only return tag is present, it's used. """
-    pass
+    # DEBUG
+    print("POOL:\n{}\n".format(
+        "\n".join("{}: {}".format(k, v) for k, v in pool.items())))
+    ds = ds_spec.render()
+    print("DS:\n{}".format(ds))
+    assert_exp_line_count(ds, ds_spec)
+    assert_exp_tag_count(ds, ds_spec, parser)
 
 
 @pytest.mark.skip("Not implemented")
@@ -109,6 +116,6 @@ def assert_exp_tag_count(ds, spec, parser):
     """ Assert that number of parsed tags is as expected. """
     # DEBUG
     print("PARAMS: {}".format(parser.params(ds)))
-    tags = parser.params(ds) + (parser.returns(ds) or []) + parser.raises(ds)
+    tags = parser.params(ds) + ([parser.returns(ds)] or []) + parser.raises(ds)
     print("TAGS:\n{}".format("\n".join(str(t) for t in tags)))
-    assert len(tags) == spec.exp_tag_count
+    assert len(tags) == spec.exp_tag_count, "All tag texts ({}):\n{}".format(len(spec.all_tag_texts), "\n".join(spec.all_tag_texts))
