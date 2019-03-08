@@ -21,39 +21,34 @@ DETAIL_LINES = ["This description provides more detail",
 
 BOOL_PARAM = ":param bool flag: this quickly describes a flag"
 FUNC_PARAM = ":param function(int, int) -> float: this maps two ints to a float"
-ITER_PARAM = """
-:param Iterable[Mapping[str, function(Iterable[float]) -> float]] func_maps: 
+ITER_PARAM = """:param Iterable[Mapping[str, function(Iterable[float]) -> float]] func_maps: 
     this is a longer description, with too much content to be described on just 
-    one line."""
+    one line.""".splitlines(False)
 UNION_PARAM = ":param str | Iterable[str] env: environment variables to try"
 
 RETURN = ":return int: simple return code"
-RETURN_MUTLI_LINE = """
-:return str: this is a 
-    multiline return comment"""
+RETURN_MUTLI_LINE = """:return str: this is a 
+    multiline return comment""".splitlines(False)
 VALUE_ERROR = ":raise ValueError: if given an invalid particular arg val."
-TYPE_ERROR = """
-:raise TypeError: if one of the given arguments 
+TYPE_ERROR = """:raise TypeError: if one of the given arguments 
     is of an unacceptable type
-"""
+""".splitlines(False)
 
-CODE_EX1 = """
-{ex_tag}
+CODE_EX1 = """{ex_tag}
 
 .. code-block:: python
 
     from a import b
     c = 3
-""".format(ex_tag=RST_EXAMPLE_TAG)
+""".format(ex_tag=RST_EXAMPLE_TAG).splitlines(False)
 
-CODE_EX2 = """
-{ex_tag}
+CODE_EX2 = """{ex_tag}
 
 .. code-block:: python
 
     text = "this is the second example"
     text += " and should parse separately from the first"
-""".format(ex_tag=RST_EXAMPLE_TAG)
+""".format(ex_tag=RST_EXAMPLE_TAG).splitlines(False)
 
 
 DESC_POOL = [{"headline": h, "detail": d} for h, d in [
@@ -77,12 +72,12 @@ RETURN_POOL = [{RET_KEY: items} for items in [RETURN, RETURN_MUTLI_LINE]]
 ERROR_POOL = [{ERR_KEY: items} for items in powerset([VALUE_ERROR, TYPE_ERROR])]
 CODE_POOL = [{EXS_KEY: items} for items in powerset([CODE_EX1, CODE_EX2])]
 SPACE_POOL = [dict(zip(
-    ("pre_tags_space", "pre_examples_space", "trailing_space"), flags))
-    for flags in itertools.product([False, True], [False, True], [False, True])
+    ("pre_tags_space", "trailing_space"), flags))
+    for flags in itertools.product([False, True], [False, True])
 ]
 
 
-def build_args_space(**kwargs):
+def build_args_space(allow_empty, **kwargs):
 
     desc_key = "description"
     space_key = "spaces"
@@ -110,11 +105,13 @@ def build_args_space(**kwargs):
                 res[k] = v
         return res
 
-    return [combine_mappings(ps) for ps in
-            itertools.product(*[get_pool(n) for n in defaults])]
+    space = [combine_mappings(ps) for ps in
+             itertools.product(*[get_pool(n) for n in defaults])]
+    return space if allow_empty else [p for p in space if any(p.values())]
 
 
 def pytest_generate_tests(metafunc):
+    """ Provide test cases with a docstring parser if requested. """
     parser_param_hook = "parser"
     if parser_param_hook in metafunc.fixturenames:
         metafunc.parametrize(parser_param_hook, [RstDocstringParser()])
@@ -148,14 +145,13 @@ class DocstringSpecification(object):
     """ Product type to model input parameter variation to docstring test. """
 
     def __init__(self, headline=None, detail=None, params=None, returns=None,
-                 raises=None, pre_tags_space=False, pre_examples_space=False,
+                 raises=None, pre_tags_space=False,
                  examples=None, trailing_space=False):
         coll_atts = ["headline", "detail", PAR_KEY, RET_KEY, ERR_KEY, EXS_KEY]
         attr_vals = [headline, detail, params, returns, raises, examples]
         for att, arg in zip(coll_atts, attr_vals):
             setattr(self, att, self._finalize_argument(arg))
         self.pre_tags_space = pre_tags_space
-        self.pre_examples_space = pre_examples_space
         self.trailing_space = trailing_space
         non_lists = {a: getattr(self, a) for a in coll_atts
                      if not isinstance(getattr(self, a), list)}
@@ -190,22 +186,34 @@ class DocstringSpecification(object):
         n = 0
         if self.headline:
             n += len(self.headline)
+        print("POST HEADLINE: {}".format(n))
         if self.detail:
             n += len(self.detail)
+        print("POST DETAIL: {}".format(n))
         if self.headline and self.detail:
             n += 1    # Intervening blank line
+        print("POST FIRST BLANK: {}".format(n))
         if self.has_tags:
-            n += sum(len(c) for c in self.all_tag_line_chunks)
+            n += sum(c.count("\n") - 1 for c in self.all_tag_line_chunks)
+        print("POST HAS TAGS: {}".format(n))
         blank_lines_count = 0
-        if self.trailing_space:
-            blank_lines_count += 1
-        if self.examples and self.pre_examples_space and self.has_tags:
-            blank_lines_count += 1
         if self.has_tags and self.pre_tags_space and (self.headline or self.detail):
             blank_lines_count += 1
-        if self.headline and self.detail:
+        print("POST PRE TAGS SPACE BLANKS: {}".format(blank_lines_count))
+        print("EXAMPLES:\n{}".format(self.examples))
+        if self.examples:
+            if self.headline or self.detail or self.has_tags:
+                blank_lines_count += 1
+            print("BLANKS EX 1: {}".format(blank_lines_count))
+            n += sum(chunk.strip("\n").count("\n") + 1 for chunk in self.examples)
+            print("IN EXAMPLES: {}".format(n))
+            blank_lines_count += (len(self.examples) - 1)
+            print("BLANKS EX 2: {}".format(blank_lines_count))
+        if self.trailing_space:
             blank_lines_count += 1
+        print("POST TRAILING BLANKS: {}".format(blank_lines_count))
         n += blank_lines_count
+        print("FINAL N: {}".format(n))
         return n
 
     @property
@@ -219,21 +227,24 @@ class DocstringSpecification(object):
 
         :return str: the docstring encoded by this instance's composition
         """
-        if self.headline and self.detail:
-            desc_text = "{}\n{}".format(self.headline, "\n".join(self.detail))
-        else:
-            desc_text = self.headline or self.detail or ""
+        headline = "\n".join(self.headline)
+        detail = "\n".join(self.detail)
+        desc_text = "{}\n\n{}".format(headline, detail) if headline and detail \
+            else (headline or detail or "")
         tags_text = "\n".join(self.all_tag_line_chunks)
-        examples_text = "\n".join(self.examples)
+        examples_text = "\n\n".join(self.examples)
         if desc_text and tags_text:
             before_examples = "{}{}{}".format(
                 desc_text, "\n" if self.pre_tags_space else "", tags_text)
         else:
             before_examples = desc_text or tags_text
         if before_examples and examples_text:
-            ds = "{}{}{}".format(
-                before_examples, "\n" if self.pre_examples_space else "",
-                examples_text)
+            ds = "{}\n\n{}".format(before_examples, examples_text)
         else:
             ds = before_examples or examples_text
+        if not ds.endswith("\n"):
+            ds += "\n"
+        if self.trailing_space:
+            print("ADDING TRAILING SPACE")
+            ds += "\n"
         return ds

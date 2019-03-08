@@ -29,7 +29,6 @@ ParsedDocstringResult = namedtuple(
     ["doc", "desc", "params", "returns", "raises", "example"])
 
 
-
 class DocstringParser(object):
     """ Entity responsible for parsing docstrings """
 
@@ -165,8 +164,8 @@ class RstDocstringParser(DocstringParser):
                 return h, len(ls)
 
         head, non_head_index = seek_past_head(lines)
-        if not head:
-            raise OradocError("Empty docstring")
+        #if not head:
+        #    raise OradocError("Empty docstring")
         head = " ".join(l.strip() for l in head)
 
         ls1, ls2 = tee(lines[non_head_index:])
@@ -174,7 +173,7 @@ class RstDocstringParser(DocstringParser):
             self._is_blank, takewhile(lambda l: not self._is_tag_start(l), ls1)))
         desc = head
         if detail_lines:
-            desc += ("\n\n" + "\n".join(detail_lines))
+            desc += ("\n\n" if desc else "" + "\n".join(detail_lines))
         post_desc = list(dropwhile(lambda l: not self._is_tag_start(l), ls2))
 
         raw_tag_blocks = []

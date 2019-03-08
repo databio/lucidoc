@@ -11,11 +11,15 @@ __author__ = "Vince Reuter"
 __email__ = "vreuter@virginia.edu"
 
 
-@pytest.mark.parametrize(
-    "pool", build_args_space(params=None, returns=None, raises=None))
+@pytest.mark.parametrize("pool",
+    build_args_space(allow_empty=False, params=None, returns=None, raises=None))
 def test_no_tags(pool, ds_spec, parser):
     """ When no tags are present, none are parsed. """
+    # DEBUG
+    print("POOL:\n{}\n".format(
+        "\n".join("{}: {}".format(k, v) for k, v in pool.items())))
     ds = ds_spec.render()
+    print("DS:\n{}".format(ds))
     assert_exp_line_count(ds, ds_spec)
     assert_exp_tag_count(ds, ds_spec, parser)
 
@@ -80,10 +84,12 @@ def test_raise_vs_raises():
 
 
 def assert_exp_line_count(ds, spec):
-    assert len(ds.splitlines()) == spec.exp_line_count
+    assert ds.count("\n") == spec.exp_line_count
 
 
 def assert_exp_tag_count(ds, spec, parser):
     """ Assert that number of parsed tags is as expected. """
-    tags = parser.params(ds) + parser.returns()
+    # DEBUG
+    print("PARAMS: {}".format(parser.params(ds)))
+    tags = parser.params(ds) + (parser.returns(ds) or []) + parser.raises(ds)
     assert len(tags) == spec.exp_tag_count
