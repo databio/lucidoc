@@ -116,6 +116,10 @@ def assert_exp_tag_count(ds, spec, parser):
     """ Assert that number of parsed tags is as expected. """
     # DEBUG
     print("PARAMS: {}".format(parser.params(ds)))
-    tags = parser.params(ds) + ([parser.returns(ds)] or []) + parser.raises(ds)
+    rets = parser.returns(ds)
+    rets = rets or []
+    if isinstance(rets, oradocle.RetTag):
+        rets = [rets]
+    tags = parser.params(ds) + rets + parser.raises(ds)
     print("TAGS:\n{}".format("\n".join(str(t) for t in tags)))
     assert len(tags) == spec.exp_tag_count, "All tag texts ({}):\n{}".format(len(spec.all_tag_texts), "\n".join(spec.all_tag_texts))
