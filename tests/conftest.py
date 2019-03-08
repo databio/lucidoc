@@ -152,8 +152,20 @@ class DocstringSpecification(object):
     def __init__(self, headline=None, detail=None, params=None, returns=None,
                  raises=None, pre_tags_space=False,
                  examples=None, trailing_space=False):
-        coll_atts = ["headline", "detail", PAR_KEY, RET_KEY, ERR_KEY, EXS_KEY]
-        attr_vals = [headline, detail, params, returns, raises, examples]
+        if returns is None:
+            returns = []
+        elif isinstance(returns, str):
+            returns = [returns]
+        elif isinstance(returns, Iterable):
+            if all(isinstance(r, str) for r in returns):
+                returns = ["\n".join(returns)]
+            elif all(isinstance(r, Iterable) and not isinstance(r, str) for r in returns):
+                returns = ["\n".join(rs) for rs in returns]
+            else:
+                raise Exception("Illegal returns argument: {}".format(returns))
+        setattr(self, RET_KEY, returns)
+        coll_atts = ["headline", "detail", PAR_KEY, ERR_KEY, EXS_KEY]
+        attr_vals = [headline, detail, params, raises, examples]
         for att, arg in zip(coll_atts, attr_vals):
             setattr(self, att, self._finalize_argument(arg))
         self.pre_tags_space = pre_tags_space
@@ -178,6 +190,8 @@ class DocstringSpecification(object):
     @property
     def all_tag_texts(self):
         """ Collection in which each element is the lines for one tag. """
+        # DEBUG
+        print("RETURNS: {}".format(self.returns))
         return self.params + self.returns + self.raises
 
     @property
@@ -225,7 +239,7 @@ class DocstringSpecification(object):
     @property
     def has_tags(self):
         """ Whether any tags are specified. """
-        return len(self.all_tag_texts) > 0
+        return self.exp_tag_count > 0
 
     def render(self):
         """
