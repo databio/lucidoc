@@ -148,6 +148,11 @@ class RstDocstringParser(DocstringParser):
     @staticmethod
     def _is_tag_start(l):
         """ Determine whether line seems to start a tag declaration. """
+        return l.startswith(":") and not l.startswith(RST_EXAMPLE_TAG)
+
+    @staticmethod
+    def _past_desc(l):
+        """ Determine whether a line looks to be past docstring description. """
         return l.startswith(":")
 
     def _parse(self, ds, name=None):
@@ -170,11 +175,11 @@ class RstDocstringParser(DocstringParser):
 
         ls1, ls2 = tee(lines[non_head_index:])
         detail_lines = list(filterfalse(
-            self._is_blank, takewhile(lambda l: not self._is_tag_start(l), ls1)))
+            self._is_blank, takewhile(lambda l: not self._past_desc(l), ls1)))
         desc = head
         if detail_lines:
             desc += ("\n\n" if desc else "" + "\n".join(detail_lines))
-        post_desc = list(dropwhile(lambda l: not self._is_tag_start(l), ls2))
+        post_desc = list(dropwhile(lambda l: not self._past_desc(l), ls2))
 
         raw_tag_blocks = []
         if post_desc and self._is_tag_start(post_desc[0]):
