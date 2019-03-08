@@ -1,39 +1,23 @@
 """ Tests for parsing and rendering docstrings that span multiple lines. """
 
+import itertools
 import pytest
 import oradocle
+
+from conftest import DESC_POOL, PARAM_POOL, RETURN_POOL, ERROR_POOL, CODE_POOL, \
+    SPACE_POOL, build_args_space
 
 __author__ = "Vince Reuter"
 __email__ = "vreuter@virginia.edu"
 
 
-HEADLINE = "This is a short description."
-DETAIL_LINES = ["This description provides more detail",
-                "split over multiple lines.",
-                "It may or may not have intervening or flanking blank line(s)."]
-
-
-@pytest.fixture(scope="function")
-def headline():
-    return HEADLINE
-
-
-@pytest.fixture(scope="function")
-def detail_lines():
-    return DETAIL_LINES
-
-
-BOOL_PARAM = ":param bool flag: "
-FUNC_PARAM = ":param function(int, int) -> float"
-ITER_PARAM = ":param Iterable[Mapping[str, function(Iterable[float]) -> float]]"
-UNION_PARAM = ":param str | Iterable[str]"
-
-
-@pytest.mark.skip("Not implemented")
-@pytest.mark.parametrize("parts", [])
-def test_no_tags():
+@pytest.mark.parametrize(
+    "pool", build_args_space(params=None, returns=None, raises=None))
+def test_no_tags(pool, ds_spec, parser):
     """ When no tags are present, none are parsed. """
-    pass
+    ds = ds_spec.render()
+    assert_exp_line_count(ds, ds_spec)
+    assert_exp_tag_count(ds, ds_spec, parser)
 
 
 @pytest.mark.skip("Not implemented")
@@ -93,3 +77,13 @@ def test_return_vs_returns():
 def test_raise_vs_raises():
     """ Both styles of exception docstring are allowed. """
     pass
+
+
+def assert_exp_line_count(ds, spec):
+    assert len(ds.splitlines()) == spec.exp_line_count
+
+
+def assert_exp_tag_count(ds, spec, parser):
+    """ Assert that number of parsed tags is as expected. """
+    tags = parser.params(ds) + parser.returns()
+    assert len(tags) == spec.exp_tag_count
