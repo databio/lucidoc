@@ -138,12 +138,16 @@ def ds_spec(request):
         corresponding to the parameter pool supplied by the test case making
         the request
     """
-    pk = "pool"
-    if pk not in request.fixturenames:
-        raise Exception("Test case requesting docstring specification is not "
-                        "parameterized in terms of '{}'".format(pk))
-    pool = request.getfixturevalue(pk)
-    return DocstringSpecification(**{k: v or None for k, v in pool.items()})
+    pks = ["pool", "excl_pool"]
+    for pk in pks:
+        if pk in request.fixturenames:
+            pool = request.getfixturevalue(pk)
+            # DEBUG
+            print("POOL: {}".format(pool))
+            kwargs = {k: v or None for k, v in pool.items()}
+            return DocstringSpecification(**kwargs)
+    raise Exception("Test case requesting docstring specification is not "
+                    "parameterized by any pool key: {}".format(", ".join(pks)))
 
 
 class DocstringSpecification(object):
