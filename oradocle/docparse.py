@@ -219,8 +219,8 @@ class RstDocstringParser(DocstringParser):
                 raise TypeError("Unrecognized doc tag type: {}".format(type(t)))
 
         if len(ret) > 1:
-            raise ValueError("Multiple ({}) returns tags: {}".
-                             format(len(ret), ret))
+            raise OradocError("Multiple ({}) returns tags: {}".
+                              format(len(ret), ret))
         ret = ret[0] if ret else None
 
         self._last_seen = ParsedDocstringResult(ds, desc, par, ret, err, ex_lines)

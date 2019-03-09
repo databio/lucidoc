@@ -6,4 +6,5 @@ __email__ = "vreuter@virginia.edu"
 from .docparse import *
 from .docstyle import *
 from .doctags import *
+from .exceptions import OradocError
 from .oradoc import *

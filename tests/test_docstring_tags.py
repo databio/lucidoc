@@ -1,11 +1,11 @@
 """ Tests for parsing and rendering docstrings that span multiple lines. """
 
-import itertools
 import pytest
 import oradocle
 
 from conftest import DESC_KEY, PAR_KEY, RET_KEY, ERR_KEY, EXS_KEY, DESC_POOL, \
-    PARAM_POOL, RETURN_POOL, ERROR_POOL, CODE_POOL, SPACE_POOL, build_args_space
+    PARAM_POOL, RETURN_POOL, ERROR_POOL, CODE_POOL, SPACE_POOL, \
+    RETURN, RETURN_MUTLI_LINE, build_args_space
 
 __author__ = "Vince Reuter"
 __email__ = "vreuter@virginia.edu"
@@ -61,10 +61,17 @@ def test_only_returns(pool, ds_spec, parser):
     assert_exp_tag_count(ds, ds_spec, parser)
 
 
-@pytest.mark.skip("Not implemented")
-def test_multiple_returns():
+@pytest.mark.parametrize("pool", build_args_space(
+    allow_empty=False, **{RET_KEY: [{RET_KEY: [RETURN, RETURN_MUTLI_LINE]}]}))
+def test_multiple_returns(pool, ds_spec, parser):
     """ Multiple return tags are prohibited. """
-    pass
+    ds = ds_spec.render()
+    # DEBUG
+    print("POOL:\n{}\n".format(
+        "\n".join("{}: {}".format(k, v) for k, v in pool.items())))
+    print("DS:\n{}".format(ds))
+    with pytest.raises(oradocle.OradocError):
+        parser._parse(ds)
 
 
 @pytest.mark.skip("Not implemented")

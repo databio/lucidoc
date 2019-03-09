@@ -162,7 +162,9 @@ class DocstringSpecification(object):
             elif all(isinstance(r, Iterable) and not isinstance(r, str) for r in returns):
                 returns = ["\n".join(rs) for rs in returns]
             else:
-                raise Exception("Illegal returns argument: {}".format(returns))
+                returns = [rs if isinstance(rs, str) else "\n".join(rs)
+                           for rs in returns]
+                #raise Exception("Illegal returns argument: {}".format(returns))
         setattr(self, RET_KEY, returns)
         coll_atts = ["headline", "detail", PAR_KEY, ERR_KEY, EXS_KEY]
         attr_vals = [headline, detail, params, raises, examples]
@@ -251,6 +253,8 @@ class DocstringSpecification(object):
         detail = "\n".join(self.detail)
         desc_text = "{}\n\n{}".format(headline, detail) if headline and detail \
             else (headline or detail or "")
+        if desc_text:
+            desc_text += "\n"
         tags_text = "\n".join(self.all_tag_texts)
         examples_text = "\n\n".join(self.examples)
         if desc_text and tags_text:
@@ -267,4 +271,4 @@ class DocstringSpecification(object):
         if self.trailing_space:
             print("ADDING TRAILING SPACE")
             ds += "\n"
-        return ds
+        return ds.replace("\n\n\n", "\n\n")
