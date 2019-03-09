@@ -51,22 +51,31 @@ CODE_EX2 = """{ex_tag}
 """.format(ex_tag=RST_EXAMPLE_TAG).splitlines(False)
 
 
-DESC_POOL = [{"headline": h, "detail": d} for h, d in [
-    (None, None), (HEADLINE, None), (None, DETAIL_LINES), (HEADLINE, DETAIL_LINES)
-]]
-
 
 def powerset(items, nonempty=False):
+    """
+    Powerset of a collection, optionally excluding the empty set.
+
+    :param items:
+    :param nonempty:
+    :return:
+    """
     return [x for k in range(1 if nonempty else 0, 1 + len(items)) for x in
             itertools.combinations(items, k)]
 
 
+SHORT_DESC_KEY = "headline"
+LONG_DESC_KEY = "detail"
 DESC_KEY = "description"
 PAR_KEY = "params"
 RET_KEY = "returns"
 ERR_KEY = "raises"
 EXS_KEY = "examples"
 
+
+DESC_POOL = [{SHORT_DESC_KEY: h, LONG_DESC_KEY: d} for h, d in [
+    (None, None), (HEADLINE, None), (None, DETAIL_LINES), (HEADLINE, DETAIL_LINES)
+]]
 PARAM_POOL = [{PAR_KEY: items} for items in
               powerset([BOOL_PARAM, FUNC_PARAM, ITER_PARAM, UNION_PARAM])]
 RETURN_POOL = [{RET_KEY: items} for items in [RETURN, RETURN_MUTLI_LINE]]
@@ -79,6 +88,15 @@ SPACE_POOL = [dict(zip(
 
 
 def build_args_space(allow_empty, **kwargs):
+    """
+    Create collection of docstring specification parameter schemes.
+
+    :param bool allow_empty: Whether an empty scheme (no parameters) is valid.
+    :param kwargs: hook for direct specification for specific tag type(s) of
+        pool(s) of argument values from which combinations may be generated
+    :return list[dict[str, object]]: collection of mappings from tag type name
+        to value
+    """
 
     space_key = "spaces"
 
@@ -88,15 +106,21 @@ def build_args_space(allow_empty, **kwargs):
     ])
 
     def finalize(obj):
+        # Homogenize types.
         return obj or [{}]
 
     def get_pool(name):
+        # Fall back to default if nothing is provided.
+        # Don't just use kwargs.get(name) or default[name] since the
+        # name may be passed explicitly mapping to None, and then default
+        # shouldn't be used.
         try:
             return finalize(kwargs[name])
         except KeyError:
             return defaults[name]
 
     def combine_mappings(ms):
+        # Fold (disjoint) key-value maps into one.
         res = {}
         for m in ms:
             for k, v in m.items():
@@ -105,6 +129,7 @@ def build_args_space(allow_empty, **kwargs):
                 res[k] = v
         return res
 
+    # Create and return the space, removing an empty specifications if desired.
     space = [combine_mappings(ps) for ps in
              itertools.product(*[get_pool(n) for n in defaults])]
     if allow_empty:
@@ -155,7 +180,9 @@ class DocstringSpecification(object):
 
     def __init__(self, headline=None, detail=None, params=None, returns=None,
                  raises=None, pre_tags_space=False,
-                 examples=None, trailing_space=False):
+                 examples=None, trailing_space=False,
+                 space_between_examples=True):
+        self.space_between_examples = space_between_examples
         if returns is None:
             returns = []
         elif isinstance(returns, str):
@@ -163,14 +190,15 @@ class DocstringSpecification(object):
         elif isinstance(returns, Iterable):
             if all(isinstance(r, str) for r in returns):
                 returns = ["\n".join(returns)]
-            elif all(isinstance(r, Iterable) and not isinstance(r, str) for r in returns):
+            elif all(isinstance(r, Iterable) and
+                     not isinstance(r, str) for r in returns):
                 returns = ["\n".join(rs) for rs in returns]
             else:
                 returns = [rs if isinstance(rs, str) else "\n".join(rs)
                            for rs in returns]
                 #raise Exception("Illegal returns argument: {}".format(returns))
         setattr(self, RET_KEY, returns)
-        coll_atts = ["headline", "detail", PAR_KEY, ERR_KEY, EXS_KEY]
+        coll_atts = [SHORT_DESC_KEY, LONG_DESC_KEY, PAR_KEY, ERR_KEY, EXS_KEY]
         attr_vals = [headline, detail, params, raises, examples]
         for att, arg in zip(coll_atts, attr_vals):
             setattr(self, att, self._finalize_argument(arg))
@@ -223,7 +251,8 @@ class DocstringSpecification(object):
             n += sum(tt.count("\n") + 1 for tt in self.all_tag_texts)
         print("POST HAS TAGS: {}".format(n))
         blank_lines_count = 0
-        if self.has_tags and self.pre_tags_space and (self.headline or self.detail):
+        if self.has_tags and self.pre_tags_space and \
+                (self.headline or self.detail):
             blank_lines_count += 1
         print("POST PRE TAGS SPACE BLANKS: {}".format(blank_lines_count))
         print("EXAMPLES:\n{}".format(self.examples))
@@ -231,7 +260,9 @@ class DocstringSpecification(object):
             if self.headline or self.detail or self.has_tags:
                 blank_lines_count += 1
             print("BLANKS EX 1: {}".format(blank_lines_count))
-            n += sum(chunk.strip("\n").count("\n") + 1 for chunk in self.examples)
+            n += sum(chunk.strip("\n").count("\n") +
+                     (1 if self.space_between_examples else 0)
+                     for chunk in self.examples)
             print("IN EXAMPLES: {}".format(n))
             blank_lines_count += (len(self.examples) - 1)
             print("BLANKS EX 2: {}".format(blank_lines_count))
@@ -260,7 +291,8 @@ class DocstringSpecification(object):
         if desc_text:
             desc_text += "\n"
         tags_text = "\n".join(self.all_tag_texts)
-        examples_text = "\n\n".join(self.examples)
+        examples_text = ("\n\n" if self.space_between_examples else "\n").\
+            join(self.examples)
         if desc_text and tags_text:
             before_examples = "{}{}{}".format(
                 desc_text, "\n" if self.pre_tags_space else "", tags_text)

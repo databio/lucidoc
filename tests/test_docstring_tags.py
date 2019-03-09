@@ -67,19 +67,6 @@ def test_only_returns(pool, ds_spec, parser):
     assert_exp_tag_count(ds, ds_spec, parser)
 
 
-@pytest.mark.parametrize("pool", build_args_space(
-    allow_empty=False, **{RET_KEY: [{RET_KEY: [RETURN, RETURN_MUTLI_LINE]}]}))
-def test_multiple_returns(pool, ds_spec, parser):
-    """ Multiple return tags are prohibited. """
-    ds = ds_spec.render()
-    # DEBUG
-    print("POOL:\n{}\n".format(
-        "\n".join("{}: {}".format(k, v) for k, v in pool.items())))
-    print("DS:\n{}".format(ds))
-    with pytest.raises(oradocle.OradocError):
-        parser._parse(ds)
-
-
 @pytest.mark.parametrize("pool", build_args_space(allow_empty=False,
     **{DESC_KEY: None, PAR_KEY: None, RET_KEY: None, EXS_KEY: None}))
 def test_only_raises(pool, ds_spec, parser):
@@ -156,6 +143,19 @@ def test_raise_vs_raises(tag, pool, ds_spec):
     assert all(isinstance(e, oradocle.ErrTag) for e in err2)
     assert all(e1.typename == e2.typename for e1, e2 in zip(err1, err2))
     assert all(e1.description == e2.description for e1, e2 in zip(err1, err2))
+
+
+@pytest.mark.parametrize("pool", build_args_space(
+    allow_empty=False, **{RET_KEY: [{RET_KEY: [RETURN, RETURN_MUTLI_LINE]}]}))
+def test_multiple_returns(pool, ds_spec, parser):
+    """ Multiple return tags are prohibited. """
+    ds = ds_spec.render()
+    # DEBUG
+    print("POOL:\n{}\n".format(
+        "\n".join("{}: {}".format(k, v) for k, v in pool.items())))
+    print("DS:\n{}".format(ds))
+    with pytest.raises(oradocle.OradocError):
+        parser._parse(ds)
 
 
 def assert_exp_line_count(ds, spec):
