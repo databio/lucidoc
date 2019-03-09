@@ -182,7 +182,25 @@ class DocstringSpecification(object):
                  raises=None, pre_tags_space=False,
                  examples=None, trailing_space=False,
                  space_between_examples=True):
-        self.space_between_examples = space_between_examples
+        """
+        :param str headline: a short (ideally one-line) description
+        :param str | Iterable[str] detail: longer, perhaps multi-line
+            description for additional detail
+        :param str | Iterable[str] params:
+        :param str | Iterable[str] returns:
+        :param str | Iterable[str] raises: blocks of text that define docstring
+            exception tags
+        :param bool pre_tags_space: whether to ensure a blank line before the
+            tags section (provided the description is nonempty)
+        :param str | Iterable[str] examples: block(s) of text that define
+            code examples
+        :param bool trailing_space: whether to ensure a blank line at the
+            end of the docstring
+        :param bool space_between_examples: whether to ensure a blank
+            line between each example
+        """
+
+        # We want the return tag texts to be a collection
         if returns is None:
             returns = []
         elif isinstance(returns, str):
@@ -198,12 +216,19 @@ class DocstringSpecification(object):
                            for rs in returns]
                 #raise Exception("Illegal returns argument: {}".format(returns))
         setattr(self, RET_KEY, returns)
+
+        # Establish the docstring section settings.
         coll_atts = [SHORT_DESC_KEY, LONG_DESC_KEY, PAR_KEY, ERR_KEY, EXS_KEY]
         attr_vals = [headline, detail, params, raises, examples]
         for att, arg in zip(coll_atts, attr_vals):
             setattr(self, att, self._finalize_argument(arg))
+
+        # Set the spacing parameters
         self.pre_tags_space = pre_tags_space
         self.trailing_space = trailing_space
+        self.space_between_examples = space_between_examples
+
+        # Sanity check on the value types
         non_lists = {a: getattr(self, a) for a in coll_atts
                      if not isinstance(getattr(self, a), list)}
         assert len(non_lists) == 0, "Non lists: {}".format(non_lists)
@@ -307,4 +332,4 @@ class DocstringSpecification(object):
         if self.trailing_space:
             print("ADDING TRAILING SPACE")
             ds += "\n"
-        return ds.replace("\n\n\n", "\n\n")
+        return ds.replace("\n\n\n", "\n\n")    # Clean up any double blanks.
