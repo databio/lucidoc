@@ -87,7 +87,7 @@ class TagRenderer(object):
         """
         Render the given tag.
 
-        :param oradocle.DocTag t: tag to render
+        :param lucidoc.DocTag t: tag to render
         :return str: rendition of the given tag
         """
         pass
@@ -100,7 +100,7 @@ class MdTagRenderer(TagRenderer):
         """
         Render the given tag.
 
-        :param oradocle.DocTag t: tag to render
+        :param lucidoc.DocTag t: tag to render
         :return str: rendition of the given tag
         """
         if isinstance(t, ParTag):

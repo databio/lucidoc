@@ -62,7 +62,7 @@ setup(
     license="BSD2",
     entry_points={
         "console_scripts": [
-            "{prog} = {pkg}.{prog}:main".format(pkg=PACKAGE, prog="oradoc")
+            "{prog} = {pkg}.{prog}:main".format(pkg=PACKAGE, prog="lucidoc")
         ],
     },
     include_package_data=True,

@@ -1,7 +1,7 @@
 """ Docstring styling """
 
 import abc
-from .exceptions import OradocError
+from .exceptions import lucidocError
 
 __author__ = "Vince Reuter"
 __email__ = "vreuter@virginia.edu"
@@ -56,7 +56,7 @@ STYLERS = {
 }
 
 
-class UnknownStylerError(OradocError):
+class UnknownStylerError(lucidocError):
     """ Exception for request of unsupported styling strategy. """
 
     def __init__(self, name):
@@ -75,8 +75,8 @@ def get_styler(name):
     Get a docstring styling strategy.
 
     :param str name: name/key of desired styling strategy
-    :return oradocle.DocstringStyler: styler to which given name is mapped.
-    :raise oradocle.UnknownStylerError: if given a nonempty name that's not
+    :return lucidoc.DocstringStyler: styler to which given name is mapped.
+    :raise lucidoc.UnknownStylerError: if given a nonempty name that's not
         mapped to a styler.
     """
     try:

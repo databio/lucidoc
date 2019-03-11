@@ -8,7 +8,7 @@ if sys.version_info < (3, 3):
 else:
     from collections.abc import Iterable
 import pytest
-from oradocle.docparse import RST_EXAMPLE_TAG, RstDocstringParser
+from lucidoc.docparse import RST_EXAMPLE_TAG, RstDocstringParser
 
 __author__ = "Vince Reuter"
 __email__ = "vreuter@virginia.edu"
@@ -158,7 +158,7 @@ def ds_spec(request):
     which a docstring to parse will be rendered, and which provides the
     expectations against which to perform assertions about the parse result.
 
-    :return oradocle.tests.DocstringSpecification: a docstring specification
+    :return lucidoc.tests.DocstringSpecification: a docstring specification
         corresponding to the parameter pool supplied by the test case making
         the request
     """

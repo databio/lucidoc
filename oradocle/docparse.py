@@ -11,7 +11,7 @@ if sys.version_info < (3, 0):
 else:
     from itertools import filterfalse
 from .doctags import *
-from .exceptions import OradocError
+from .exceptions import lucidocError
 
 
 __author__ = "Vince Reuter"
@@ -40,7 +40,7 @@ class DocstringParser(object):
         Fully parse the given docstring.
 
         :param str ds: The docstring to parse.
-        :return oradocle.ParsedDocstringResult: The complete result of parsing
+        :return lucidoc.ParsedDocstringResult: The complete result of parsing
             the given docstring.
         """
         pass
@@ -61,7 +61,7 @@ class DocstringParser(object):
         Parse parameter tags from docstring.
 
         :param str ds: docstring from which to parse parameter tags
-        :return Iterable[oradocle.ParTag]: (possibly empty) collection of
+        :return Iterable[lucidoc.ParTag]: (possibly empty) collection of
             parameter tags parsed from the given docstring
         """
         pass
@@ -72,7 +72,7 @@ class DocstringParser(object):
         Parse parameter tags from docstring.
 
         :param str ds: docstring from which to parse result tag
-        :return oradocle.RetTag | NoneType: (possibly empty) collection of
+        :return lucidoc.RetTag | NoneType: (possibly empty) collection of
             parameter tags parsed from the given docstring
         """
         pass
@@ -83,7 +83,7 @@ class DocstringParser(object):
         Parse parameter tags from docstring.
 
         :param str ds: docstring from which to parse result tag
-        :return Iterable[oradocle.ErrTag]: (possibly empty) collection of
+        :return Iterable[lucidoc.ErrTag]: (possibly empty) collection of
             parameter tags parsed from the given docstring
         """
         pass
@@ -138,7 +138,7 @@ class RstDocstringParser(DocstringParser):
         try:
             decl_line = chunk[0]
         except IndexError:
-            raise OradocError("Empty tag chunk")
+            raise lucidocError("Empty tag chunk")
         tag_type, args = self._parse_tag_start(decl_line)
         if len(chunk) > 1:
             args[-1] = args[-1] + " ".join(l.lstrip() for l in chunk[1:])
@@ -170,7 +170,7 @@ class RstDocstringParser(DocstringParser):
 
         head, non_head_index = seek_past_head(lines)
         #if not head:
-        #    raise OradocError("Empty docstring")
+        #    raise lucidocError("Empty docstring")
         head = " ".join(l.strip() for l in head)
 
         ls1, ls2 = tee(lines[non_head_index:])
@@ -220,7 +220,7 @@ class RstDocstringParser(DocstringParser):
                 raise TypeError("Unrecognized doc tag type: {}".format(type(t)))
 
         if len(ret) > 1:
-            raise OradocError("Multiple ({}) returns tags: {}".
+            raise lucidocError("Multiple ({}) returns tags: {}".
                               format(len(ret), ret))
         ret = ret[0] if ret else None
 
@@ -238,7 +238,7 @@ class RstDocstringParser(DocstringParser):
         elif line.startswith(":raise") or line.startswith(":raises"):
             tt = ErrTag
         else:
-            raise OradocError("Invalid tag declaration start: " + line)
+            raise lucidocError("Invalid tag declaration start: " + line)
         colon_chunks = line.split(":")
         left_parts, desc = colon_chunks[1:-1], colon_chunks[-1]
         if issubclass(tt, ParTag):
@@ -315,7 +315,7 @@ RST_KEY = "rst"
 PARSERS = {RST_KEY: RstDocstringParser()}
 
 
-class UnknownParserError(OradocError):
+class UnknownParserError(lucidocError):
     """ Exception for request of unsupported parsing strategy. """
 
     def __init__(self, name):
@@ -328,9 +328,9 @@ def get_parser(name):
     Get a docstring parsing strategy.
 
     :param str name: Key for a parsing strategy.
-    :return oradocle.DocstringParser: The parser to which the given name is
+    :return lucidoc.DocstringParser: The parser to which the given name is
         mapped.
-    :raise oradocle.UnknownParserError: If given a nonempty name that's not
+    :raise lucidoc.UnknownParserError: If given a nonempty name that's not
         mapped to a parser.
     """
     try:

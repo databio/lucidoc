@@ -18,7 +18,7 @@ import sys
 from .helpers import *
 from .docparse import get_parser, RST_KEY
 from .doctags import MdTagRenderer
-from .exceptions import OradocError
+from .exceptions import lucidocError
 
 
 module_header = "# Package {} Documentation\n"
@@ -26,7 +26,7 @@ class_header = "## Class {}"
 function_header = "### {}"
 
 
-__all__ = ["doc_class", "doc_callable", "doc_module", "run_oradoc"]
+__all__ = ["doc_class", "doc_callable", "doc_module", "run_lucidoc"]
 
 
 def _parse_args(cmdl):
@@ -64,8 +64,8 @@ def doc_module(mod, docstr_parser, render_tag,
     Get large block of Markdown-formatted documentation of a module
 
     :param module mod: module to document in Markdown.
-    :param oradocle.DocstringParser docstr_parser: how to parse a docstring.
-    :param callable(oradocle.DocTag) -> str render_tag: how to render a tag
+    :param lucidoc.DocstringParser docstr_parser: how to parse a docstring.
+    :param callable(lucidoc.DocTag) -> str render_tag: how to render a tag
         parsed from a docstring; the argument should be total. In other words,
         each potential type of tag that may be passed to it as an argument
         should be accounted for in the implementation.
@@ -99,8 +99,8 @@ def doc_class(cls, docstr_parser, render_tag, include_inherited):
     For single class definition, get text components for Markdown documentation.
 
     :param class cls: class to document with Markdown
-    :param oradocle.DocstringParser docstr_parser: How to parse a docstring.
-    :param callable(oradocle.DocTag) -> str render_tag: how to render an
+    :param lucidoc.DocstringParser docstr_parser: How to parse a docstring.
+    :param callable(lucidoc.DocTag) -> str render_tag: how to render an
         individual tag from a docstring. The implementation in the object
         passed as an argument should handle each type of DocTag that
         may be passed as an argument when this object is called.
@@ -133,7 +133,7 @@ def doc_class(cls, docstr_parser, render_tag, include_inherited):
             block_lines.extend(param_tag_lines)
             block_lines.append("\n")
         if parsed_clsdoc.returns:
-            raise OradocError("Class docstring has a return value: {}".
+            raise lucidocError("Class docstring has a return value: {}".
                               format(parsed_clsdoc.returns))
         if err_tag_lines:
             block_lines.append("**Raises:**\n")
@@ -199,8 +199,8 @@ def doc_callable(f, docstr_parser, render_tag, name=None):
     For single function get text components for Markdown documentation.
 
     :param callable | property f: function or property to document
-    :param oradocle.DocstringParser docstr_parser: How to parse a docstring.
-    :param callable(oradocle.DocTag) -> str render_tag: how to render an
+    :param lucidoc.DocstringParser docstr_parser: How to parse a docstring.
+    :param callable(lucidoc.DocTag) -> str render_tag: how to render an
         individual tag from a docstring. The implementation in the object
         passed as an argument should handle each type of DocTag that
         may be passed as an argument when this object is called.
@@ -218,7 +218,7 @@ def doc_callable(f, docstr_parser, render_tag, name=None):
         try:
             n = f.__name__
         except AttributeError:
-            raise OradocError("No name for object of {}; explicitly pass name "
+            raise lucidocError("No name for object of {}; explicitly pass name "
                               "if documenting a property".format(type(f)))
 
     print("Processing function: {}".format(n))
@@ -332,7 +332,7 @@ def get_module_paths(root, subs=None):
     """"""
 
     if not os.path.isdir(root):
-        raise OradocError("Package root path isn't a folder: {}".format(root))
+        raise lucidocError("Package root path isn't a folder: {}".format(root))
 
     _, pkgname = os.path.split(root)
 
@@ -356,14 +356,14 @@ def get_module_paths(root, subs=None):
 """
 
 
-def run_oradoc(pkg, parse_style, outfile,
+def run_lucidoc(pkg, parse_style, outfile,
                no_mod_docstr=False, include_inherited=False):
     try:
         sys.path.append(os.getcwd())
         # Attempt import
         mod = pydoc.safeimport(pkg)
         if mod is None:
-            raise OradocError("ERROR -- Target object for documentation not "
+            raise lucidocError("ERROR -- Target object for documentation not "
                               "found: {}".format(pkg))
     except pydoc.ErrorDuringImport:
         print("Error while trying to import module {}".format(pkg))
@@ -387,7 +387,7 @@ def run_oradoc(pkg, parse_style, outfile,
 def main():
     """ Main workflow """
     opts = _parse_args(sys.argv[1:])
-    run_oradoc(opts.pkgpath, opts.parse, opts.output,
+    run_lucidoc(opts.pkgpath, opts.parse, opts.output,
                opts.skip_module_docstring)
     
 

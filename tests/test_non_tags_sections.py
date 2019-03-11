@@ -1,8 +1,8 @@
 """ Tests for parsing the non-tag sections of a docstring """
 
 import pytest
-import oradocle
-from oradocle.docparse import RST_EXAMPLE_TAG
+import lucidoc
+from lucidoc.docparse import RST_EXAMPLE_TAG
 from conftest import build_args_space, powerset, CODE_EX1, CODE_EX2, DESC_KEY, \
     EXS_KEY, HEADLINE, DETAIL_LINES, LONG_DESC_KEY, SHORT_DESC_KEY
 
@@ -19,7 +19,7 @@ __email__ = "vreuter@virginia.edu"
 ))
 def test_examples(pool, ds_spec, blank_line_sep):
     """ Check that number of example blocks parsed is as expected. """
-    parser = oradocle.RstDocstringParser()
+    parser = lucidoc.RstDocstringParser()
 
     # Hack for post-hoc modification of specification fixture
     blank_space_param = "space_between_examples"

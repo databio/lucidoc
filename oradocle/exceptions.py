@@ -4,6 +4,6 @@ __author__ = "Vince Reuter"
 __email__ = "vreuter@virginia.edu"
 
 
-class OradocError(Exception):
+class lucidocError(Exception):
     """ Base error type for this package """
     pass
