@@ -140,16 +140,11 @@ def doc_class(cls, docstr_parser, render_tag, include_inherited):
             block_lines.extend(err_tag_lines)
             block_lines.append("\n")
         if parsed_clsdoc.examples:
-            # DEBUG
-            print("{} EXAMPLE(S):\n{}".format(len(parsed_clsdoc.examples), "\n".join(parsed_clsdoc.examples)))
             if not isinstance(parsed_clsdoc.examples, list):
                 raise TypeError("Example lines are {}, not list".format(type(parsed_clsdoc.examples)))
             block_lines.append("**Example(s):**\n")
             block_lines.extend(parsed_clsdoc.examples)
             block_lines.append("\n")
-        else:
-            # DEBUG
-            print("NO EXAMPLES")
         block = "\n".join(block_lines)
         cls_doc.append(block)
 
