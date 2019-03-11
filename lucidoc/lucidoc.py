@@ -19,7 +19,7 @@ from .helpers import *
 from .docparse import get_parser, RST_KEY
 from .doctags import MdTagRenderer
 from .exceptions import lucidocError
-
+from ._version import __version__
 
 module_header = "# Package {} Documentation\n"
 class_header = "## Class {}"
@@ -29,11 +29,23 @@ function_header = "### {}"
 __all__ = ["doc_class", "doc_callable", "doc_module", "run_lucidoc"]
 
 
+class _VersionInHelpParser(argparse.ArgumentParser):
+    def format_help(self):
+        """ Add version information to help text. """
+        return "version: {}\n".format(__version__) + \
+               super(_VersionInHelpParser, self).format_help()
+
+
 def _parse_args(cmdl):
 
-    parser = argparse.ArgumentParser(
+    parser = _VersionInHelpParser(
         description="Generate Markdown documentation for a module",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+    parser.add_argument(
+        "-V", "--version",
+        action="version",
+        version="%(prog)s {v}".format(v=__version__))
 
     # Required
     parser.add_argument(
