@@ -20,7 +20,14 @@ class DocstringStyler(object):
 
 class PlainDocstringStyler(DocstringStyler):
     """ Style/render docstring by simply echoing it. """
+
     def __call__(self, ds):
+        """
+        Echo a docstring for the plainest of plain styling
+
+        :param str ds: docstring to render
+        :return str: same docstring as input
+        """
         if not isinstance(ds, str):
             raise TypeError("Non-string docstring ({})".format(type(ds)))
         return ds
@@ -28,7 +35,14 @@ class PlainDocstringStyler(DocstringStyler):
 
 class PycodeDocstringStyler(DocstringStyler):
     """ Style/render docstring by wrapping it in Python code block fences. """
+
     def __call__(self, ds):
+        """
+        Render docstring as Python code block.
+
+        :param str ds: docstring to render
+        :return str: rendition of given docstring
+        """
         if not isinstance(ds, str):
             raise TypeError("Non-string docstring ({})".format(type(ds)))
         return "```py{}```".format(ds)
@@ -46,6 +60,12 @@ class UnknownStylerError(OradocError):
     """ Exception for request of unsupported styling strategy. """
 
     def __init__(self, name):
+        """
+        Create exception for request of styler of unknown name.
+
+        :param str name: name/key for desired styler / styling strategy,
+            that's not mapped to an instance and is thus problematic
+        """
         msg = "{}; choose one: {}".format(name, ", ".join(STYLERS.keys()))
         super(UnknownStylerError, self).__init__(msg)
 
@@ -54,21 +74,10 @@ def get_styler(name):
     """
     Get a docstring styling strategy.
 
-    Parameters
-    ----------
-    name : str
-        Key for a styling strategy.
-
-    Returns
-    -------
-    oradocle.DocstringStyler
-        The styler to which the given name is mapped.
-
-    Raises
-    ------
-    oradocle.UnknownStylerError
-        If given a nonempty name that's not mapped to a styler.
-
+    :param str name: name/key of desired styling strategy
+    :return oradocle.DocstringStyler: styler to which given name is mapped.
+    :raise oradocle.UnknownStylerError: if given a nonempty name that's not
+        mapped to a styler.
     """
     try:
         return STYLERS[name or PLAIN_KEY]

@@ -1,7 +1,13 @@
 #!/usr/bin/env python
-# This script generates mkdocs friendly Markdown documentation from a python package.
-# It is based on the the following blog post by Christian Medina
-# https://medium.com/python-pandemonium/python-introspection-with-the-inspect-module-2c85d5aa5a48#.twcmlyack 
+"""
+Generate mkdocs-friendly API documentation for a Python package.
+
+This program parses docstrings from objects defined in a Python package and
+uses the information from those docstrings to generate mkdocs-friendly
+documentation in Markdown format. Essentially, therefore, it generates
+API documentation for the package.
+
+"""
 
 import argparse
 import inspect
@@ -10,7 +16,7 @@ import os
 import pydoc
 import sys
 from .helpers import *
-from .docparse import get_parser
+from .docparse import get_parser, RST_KEY
 from .doctags import MdTagRenderer
 from .exceptions import OradocError
 
@@ -32,9 +38,10 @@ def _parse_args(cmdl):
     # Required
     parser.add_argument(
         "pkgpath",
-        help="Name/dotted path of package to document")
+        help="Name/dotted path to package to document, i.e. what you'd type as "
+             "the target for an import statement")
     parser.add_argument(
-        "-P", "--parse", required=True,
+        "-P", "--parse", choices=[RST_KEY], required=True,
         help="Name of parsing strategy for docstrings")
 
     # Optional
@@ -132,11 +139,11 @@ def doc_class(cls, docstr_parser, render_tag, include_inherited):
             block_lines.append("**Raises:**\n")
             block_lines.extend(err_tag_lines)
             block_lines.append("\n")
-        if parsed_clsdoc.example:
-            if not isinstance(parsed_clsdoc.example, list):
-                raise TypeError("Example lines are {}, not list".format(type(parsed_clsdoc.example)))
+        if parsed_clsdoc.examples:
+            if not isinstance(parsed_clsdoc.examples, list):
+                raise TypeError("Example lines are {}, not list".format(type(parsed_clsdoc.examples)))
             block_lines.append("**Example(s):**\n")
-            block_lines.extend(parsed_clsdoc.example)
+            block_lines.extend(parsed_clsdoc.examples)
             block_lines.append("\n")
         block = "\n".join(block_lines)
         cls_doc.append(block)
