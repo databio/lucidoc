@@ -4,7 +4,7 @@ import os
 from setuptools import setup
 import sys
 
-PACKAGE = "oradocle"
+PACKAGE = "lucidoc"
 REQDIR = "requirements"
 
 
@@ -57,7 +57,7 @@ setup(
         "Programming Language :: Python :: 3.6",
     ],
     keywords="documentation, API, docs, mkdocs, autodoc",
-    url="https://github.com/vreuter/{}/".format(PACKAGE),
+    url="https://github.com/databio/{}/".format(PACKAGE),
     author=u"Vince Reuter",
     license="BSD2",
     entry_points={
