@@ -259,9 +259,6 @@ class RstDocstringParser(DocstringParser):
             of a docstring.
         """
 
-        # DEBUG
-        #print("Parsing examples from {} lines:\n{}".format(len(ls), ls))
-
         if not ls or not ls[0].startswith(RST_EXAMPLE_TAG):
             return None
 
@@ -289,9 +286,6 @@ class RstDocstringParser(DocstringParser):
         bookend = "```"
         tag_code_block = ".. code-block::"
 
-        # DEBUG
-        #print("Creating code blocks from {} lines:\n{}".format(len(lines), lines))
-
         def add_curr(ct, chunk):
             ctl = bookend + (ct or "console")
             return acc + [[ctl] + chunk + [bookend]]
@@ -304,27 +298,14 @@ class RstDocstringParser(DocstringParser):
 
         h, t = lines[0], lines[1:]
 
-        # DEBUG
-        #print("H: {}".format(h))
-        #print("T: {}".format(t))
-
         if h.startswith(RST_EXAMPLE_TAG) or h.startswith(tag_code_block):
-            # DEBUG
-            #print("TAGGED")
             if curr:
                 acc = add_curr(code_type, curr)
             t, curr = burn_blanks(t), []
             code_type = h.lstrip(tag_code_block).strip() \
                     if h.startswith(tag_code_block) else None
         else:
-            # DEBUG
-            #print("UNTAGGED")
             curr = curr + [h]
-        # DEBUG
-        #print("T: {}".format(t))
-        #print("CODE: {}".format(code_type))
-        #print("CURR: {}".format(curr))
-        #print("ACC: {}".format(acc))
         return self._create_code_blocks(t, code_type, curr, acc)
 
 
