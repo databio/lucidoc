@@ -1,2 +1,2 @@
 # oradocle
-Documentation oracle: API documentation generation in Markdown
+From docstrings generate package API documentation in Markdown
