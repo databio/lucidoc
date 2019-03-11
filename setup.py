@@ -49,6 +49,7 @@ setup(
     version=read_version("{}/_version.py".format(PACKAGE)),
     description="API documentation in Markdown",
     long_description=long_description,
+    long_description_content_type='text/markdown',
     classifiers=[
         "Development Status :: 4 - Beta",
         "License :: OSI Approved :: BSD License",
