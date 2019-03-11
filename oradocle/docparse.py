@@ -26,7 +26,7 @@ RST_EXAMPLE_TAG = ":Example:"
 
 ParsedDocstringResult = namedtuple(
     "ParsedDocstringResult",
-    ["doc", "desc", "params", "returns", "raises", "example"])
+    ["doc", "desc", "params", "returns", "raises", "examples"])
 
 
 class DocstringParser(object):
@@ -112,14 +112,14 @@ class RstDocstringParser(DocstringParser):
     def raises(self, ds):
         return self._fetchparse(ds, "raises")
 
-    def example(self, ds):
+    def examples(self, ds):
         """
         Get the code example text from a docstring.
 
         :param str ds: docstring from which to parse example
         :return str: code example text from docstring
         """
-        return self._fetchparse(ds, "example")
+        return self._fetchparse(ds, "examples")
 
     def _fetchparse(self, ds, name):
         """ Return cached result if available, else parse then cache. """
@@ -201,7 +201,7 @@ class RstDocstringParser(DocstringParser):
         else:
             first_non_tag_index = 0
 
-        ex_lines = self._parse_example_lines(
+        examples = self._parse_example_lines(
             [] if first_non_tag_index is None
             else post_desc[first_non_tag_index:])
 
@@ -223,8 +223,8 @@ class RstDocstringParser(DocstringParser):
                               format(len(ret), ret))
         ret = ret[0] if ret else None
 
-        self._last_seen = ParsedDocstringResult(ds, desc, par, ret, err, ex_lines)
-        return (name and getattr(self._last_seen, name)) or self._last_seen
+        self._last_seen = ParsedDocstringResult(ds, desc, par, ret, err, examples)
+        return getattr(self._last_seen, name) if name else self._last_seen
 
     @staticmethod
     def _parse_tag_start(line):
@@ -250,38 +250,82 @@ class RstDocstringParser(DocstringParser):
         return tt, args
 
     def _parse_example_lines(self, ls):
-        """ Parse the example portion of a docstring. """
-        if not ls:
-            return None
-        try:
-            head = ls[0]
-        except IndexError:
+        """
+        Parse the example portion of a docstring.
+
+        :param Iterable[str] ls: lines from the code examples portion of a
+            docstring to parse
+        :return list[str]: sequence of lines for the examples section
+            of a docstring.
+        """
+
+        # DEBUG
+        #print("Parsing examples from {} lines:\n{}".format(len(ls), ls))
+
+        if not ls or not ls[0].startswith(RST_EXAMPLE_TAG):
             return None
 
-        ex_section_start = RST_EXAMPLE_TAG
-        tag_code_block = ".. code-block::"
-        default_code_name = "console"
+        # TODO: accommodate mixed styles (e.g., some Markdown and some
+        #  restructured text, but make sure the RST blocks parse as such (i.e.,
+        #  not just one big blob -- separate the examples into discrete units.))
+
+        example_blocks = self._create_code_blocks(ls, None, [], [])
+        return ["\n".join(b) for b in example_blocks]
+
+    def _create_code_blocks(self, lines, code_type, curr, acc):
+        """
+        From a collection of examples section lines, create code example blocks.
+
+        :param Iterable[str] lines: collection of lines from docstring's code
+            examples section
+        :param list[str] curr: collection of lines for example currently being
+            collected
+        :param list[list[str]] acc: collection of blocks of lines that define
+            discrete examples
+        :return list[list[str]]: collection of blocks of lines that define
+            discrete examples
+        """
+
         bookend = "```"
+        tag_code_block = ".. code-block::"
 
-        def err_msg():
-            return "Could not parse example section lines: {}".format(ls)
+        # DEBUG
+        #print("Creating code blocks from {} lines:\n{}".format(len(lines), lines))
 
-        if head.startswith(bookend):
-            return ls
-        elif head.startswith(ex_section_start):
-            code_type_lines = list(takewhile(
-                lambda l: not self._is_blank(l), dropwhile(self._is_blank, ls[1:])))
-            if len(code_type_lines) == 1:
-                code_type = code_type_lines[0].lstrip(tag_code_block).strip()
-            elif len(code_type_lines) == 0:
-                code_type = default_code_name
-            else:
-                raise OradocError(err_msg())
-            in_section_head = lambda l: self._is_blank(l) or \
-                l.startswith(tag_code_block) or l.startswith(RST_EXAMPLE_TAG)
-            content_lines = list(dropwhile(in_section_head, ls))
-            block_start = bookend + (code_type or default_code_name)
-            return [block_start] + [l.lstrip() for l in content_lines] + [bookend]
+        def add_curr(ct, chunk):
+            ctl = bookend + (ct or "console")
+            return acc + [[ctl] + chunk + [bookend]]
+
+        if len(lines) == 0:
+            return add_curr(code_type, curr) if curr else acc
+
+        def burn_blanks(c):
+            return list(dropwhile(self._is_blank, c))
+
+        h, t = lines[0], lines[1:]
+
+        # DEBUG
+        #print("H: {}".format(h))
+        #print("T: {}".format(t))
+
+        if h.startswith(RST_EXAMPLE_TAG) or h.startswith(tag_code_block):
+            # DEBUG
+            #print("TAGGED")
+            if curr:
+                acc = add_curr(code_type, curr)
+            t, curr = burn_blanks(t), []
+            code_type = h.lstrip(tag_code_block).strip() \
+                    if h.startswith(tag_code_block) else None
+        else:
+            # DEBUG
+            #print("UNTAGGED")
+            curr = curr + [h]
+        # DEBUG
+        #print("T: {}".format(t))
+        #print("CODE: {}".format(code_type))
+        #print("CURR: {}".format(curr))
+        #print("ACC: {}".format(acc))
+        return self._create_code_blocks(t, code_type, curr, acc)
 
 
 RST_KEY = "rst"

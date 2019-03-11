@@ -16,7 +16,7 @@ import os
 import pydoc
 import sys
 from .helpers import *
-from .docparse import get_parser
+from .docparse import get_parser, RST_KEY
 from .doctags import MdTagRenderer
 from .exceptions import OradocError
 
@@ -41,7 +41,7 @@ def _parse_args(cmdl):
         help="Name/dotted path to package to document, i.e. what you'd type as "
              "the target for an import statement")
     parser.add_argument(
-        "-P", "--parse", choices=[], required=True,
+        "-P", "--parse", choices=[RST_KEY], required=True,
         help="Name of parsing strategy for docstrings")
 
     # Optional
@@ -139,12 +139,17 @@ def doc_class(cls, docstr_parser, render_tag, include_inherited):
             block_lines.append("**Raises:**\n")
             block_lines.extend(err_tag_lines)
             block_lines.append("\n")
-        if parsed_clsdoc.example:
-            if not isinstance(parsed_clsdoc.example, list):
-                raise TypeError("Example lines are {}, not list".format(type(parsed_clsdoc.example)))
+        if parsed_clsdoc.examples:
+            # DEBUG
+            print("{} EXAMPLE(S):\n{}".format(len(parsed_clsdoc.examples), "\n".join(parsed_clsdoc.examples)))
+            if not isinstance(parsed_clsdoc.examples, list):
+                raise TypeError("Example lines are {}, not list".format(type(parsed_clsdoc.examples)))
             block_lines.append("**Example(s):**\n")
-            block_lines.extend(parsed_clsdoc.example)
+            block_lines.extend(parsed_clsdoc.examples)
             block_lines.append("\n")
+        else:
+            # DEBUG
+            print("NO EXAMPLES")
         block = "\n".join(block_lines)
         cls_doc.append(block)
 
