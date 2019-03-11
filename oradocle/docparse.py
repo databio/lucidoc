@@ -176,9 +176,10 @@ class RstDocstringParser(DocstringParser):
         ls1, ls2 = tee(lines[non_head_index:])
         detail_lines = list(filterfalse(
             self._is_blank, takewhile(lambda l: not self._past_desc(l), ls1)))
+
         desc = head
         if detail_lines:
-            desc += ("\n\n" if desc else "" + "\n".join(detail_lines))
+            desc += (("\n\n" if desc else "") + "\n".join(detail_lines))
         post_desc = list(dropwhile(lambda l: not self._past_desc(l), ls2))
 
         raw_tag_blocks = []
@@ -224,6 +225,7 @@ class RstDocstringParser(DocstringParser):
         ret = ret[0] if ret else None
 
         self._last_seen = ParsedDocstringResult(ds, desc, par, ret, err, examples)
+
         return getattr(self._last_seen, name) if name else self._last_seen
 
     @staticmethod
