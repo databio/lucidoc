@@ -51,7 +51,6 @@ CODE_EX2 = """{ex_tag}
 """.format(ex_tag=RST_EXAMPLE_TAG).splitlines(False)
 
 
-
 def powerset(items, nonempty=False):
     """
     Powerset of a collection, optionally excluding the empty set.
