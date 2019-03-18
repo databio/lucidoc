@@ -11,7 +11,7 @@ if sys.version_info < (3, 0):
 else:
     from itertools import filterfalse
 from .doctags import *
-from .exceptions import lucidocError
+from .exceptions import LucidocError
 
 
 __author__ = "Vince Reuter"
@@ -138,7 +138,7 @@ class RstDocstringParser(DocstringParser):
         try:
             decl_line = chunk[0]
         except IndexError:
-            raise lucidocError("Empty tag chunk")
+            raise LucidocError("Empty tag chunk")
         tag_type, args = self._parse_tag_start(decl_line)
         if len(chunk) > 1:
             args[-1] = args[-1] + " ".join(l.lstrip() for l in chunk[1:])
@@ -170,7 +170,7 @@ class RstDocstringParser(DocstringParser):
 
         head, non_head_index = seek_past_head(lines)
         #if not head:
-        #    raise lucidocError("Empty docstring")
+        #    raise LucidocError("Empty docstring")
         head = " ".join(l.strip() for l in head)
 
         ls1, ls2 = tee(lines[non_head_index:])
@@ -220,7 +220,7 @@ class RstDocstringParser(DocstringParser):
                 raise TypeError("Unrecognized doc tag type: {}".format(type(t)))
 
         if len(ret) > 1:
-            raise lucidocError("Multiple ({}) returns tags: {}".
+            raise LucidocError("Multiple ({}) returns tags: {}".
                               format(len(ret), ret))
         ret = ret[0] if ret else None
 
@@ -238,7 +238,7 @@ class RstDocstringParser(DocstringParser):
         elif line.startswith(":raise") or line.startswith(":raises"):
             tt = ErrTag
         else:
-            raise lucidocError("Invalid tag declaration start: " + line)
+            raise LucidocError("Invalid tag declaration start: " + line)
         colon_chunks = line.split(":")
         left_parts, desc = colon_chunks[1:-1], colon_chunks[-1]
         if issubclass(tt, ParTag):
@@ -315,7 +315,7 @@ RST_KEY = "rst"
 PARSERS = {RST_KEY: RstDocstringParser()}
 
 
-class UnknownParserError(lucidocError):
+class UnknownParserError(LucidocError):
     """ Exception for request of unsupported parsing strategy. """
 
     def __init__(self, name):

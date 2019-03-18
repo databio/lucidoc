@@ -18,7 +18,7 @@ import sys
 from .helpers import *
 from .docparse import get_parser, RST_KEY
 from .doctags import MdTagRenderer
-from .exceptions import lucidocError
+from .exceptions import LucidocError
 from ._version import __version__
 
 module_header = "# Package {} Documentation\n"
@@ -145,7 +145,7 @@ def doc_class(cls, docstr_parser, render_tag, include_inherited):
             block_lines.extend(param_tag_lines)
             block_lines.append("\n")
         if parsed_clsdoc.returns:
-            raise lucidocError("Class docstring has a return value: {}".
+            raise LucidocError("Class docstring has a return value: {}".
                               format(parsed_clsdoc.returns))
         if err_tag_lines:
             block_lines.append("**Raises:**\n")
@@ -230,7 +230,7 @@ def doc_callable(f, docstr_parser, render_tag, name=None):
         try:
             n = f.__name__
         except AttributeError:
-            raise lucidocError("No name for object of {}; explicitly pass name "
+            raise LucidocError("No name for object of {}; explicitly pass name "
                               "if documenting a property".format(type(f)))
 
     print("Processing function: {}".format(n))
@@ -344,7 +344,7 @@ def get_module_paths(root, subs=None):
     """"""
 
     if not os.path.isdir(root):
-        raise lucidocError("Package root path isn't a folder: {}".format(root))
+        raise LucidocError("Package root path isn't a folder: {}".format(root))
 
     _, pkgname = os.path.split(root)
 
@@ -375,8 +375,8 @@ def run_lucidoc(pkg, parse_style, outfile,
         # Attempt import
         mod = pydoc.safeimport(pkg)
         if mod is None:
-            raise lucidocError("ERROR -- Target object for documentation not "
-                              "found: {}".format(pkg))
+            raise LucidocError("ERROR -- Target object for documentation not "
+                               "found: {}".format(pkg))
     except pydoc.ErrorDuringImport:
         print("Error while trying to import module {}".format(pkg))
         raise
@@ -400,7 +400,7 @@ def main():
     """ Main workflow """
     opts = _parse_args(sys.argv[1:])
     run_lucidoc(opts.pkgpath, opts.parse, opts.output,
-               opts.skip_module_docstring)
+                opts.skip_module_docstring)
     
 
 if __name__ == '__main__':
