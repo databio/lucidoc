@@ -63,15 +63,21 @@ def _parse_args(cmdl):
     parser.add_argument(
         "--inherited", action="store_true",
         help="Include inherited members")
+
+    parser.add_argument("--whitelist", help="")
+    parser.add_argument("--blacklist", help="")
     parser.add_argument(
         "-O", "--output",
         help="Path to output file")
+    parser.add_argument("--output-folder", help="")
+    parser.add_argument("--output-groups", help="")
 
     return parser.parse_args(cmdl)
 
 
 def doc_module(mod, docstr_parser, render_tag,
-               no_mod_docstr=False, include_inherited=False):
+               no_mod_docstr=False, include_inherited=False,
+               retain=None, groups=None):
     """
     Get large block of Markdown-formatted documentation of a module
 
@@ -83,12 +89,15 @@ def doc_module(mod, docstr_parser, render_tag,
         should be accounted for in the implementation.
     :param bool no_mod_docstr: skip module-level docstring
     :param bool include_inherited: include inherited members
+    :param callable retain: positive selection (on/by name) of doc targets
     :return str: Large block of Markdown-formatted documentation of a module.
     """
+    if retain and not hasattr(retain, "__call__"):
+        raise TypeError("Object retention function must be callable")
     output = [module_header.format(mod.__name__)]
     if mod.__doc__ and not no_mod_docstr:
         output.append(mod.__doc__)
-    targets = _get_targets(mod)
+    targets = list(filter((retain or (lambda _: True)), _get_targets(mod)))
     print(os.linesep.join(["All doc targets:"] + [n for n, _ in targets]))
     classes, functions = [], []
     for n, t in targets:
@@ -333,57 +342,37 @@ def _unprotected(name):
     return not name.startswith("_")
 
 
-"""
-def get_module_paths(root, subs=None):
-    """"""
-    Get dotted paths to modules to document.
-
-    :param str root: filepath to from which to begin module search
-    :param Iterable[str] subs: subpaths used so far
-    :return Iterable[stri]: collection of dotted paths to modules to document
-    """"""
-
-    if not os.path.isdir(root):
-        raise LucidocError("Package root path isn't a folder: {}".format(root))
-
-    _, pkgname = os.path.split(root)
-
-    mod_file_paths = []
-
-    def make_mod_path(p, priors):
-        return ".".join(priors + [os.path.splitext(os.path.split(p)[1])[0]])
-
-    for r, ds, fs in os.walk(root):
-        mod_file_paths.extend(map(lambda f: os.path.join(r, f), fs))
-        for d in ds:
-            if d.startswith("_"):
-                continue
-            mod_file_paths.extend(get_module_paths(os.path.join(r, d)))
-
-    def keep(p):
-        _, fn = os.path.split(p)
-        return fn.endswith(".py") and not fn.startswith("_")
-
-    return list(map(make_mod_path, filter(keep, mod_file_paths)))
-"""
-
-
 def run_lucidoc(pkg, parse_style, outfile,
-               no_mod_docstr=False, include_inherited=False):
+                no_mod_docstr=False, include_inherited=False,
+                whitelist=None, blacklist=None):
+    """
+    Discover docstrings and create package API documentation in Markdown.
+
+    :param str pkg: name of the package to document
+    :param str parse_style: key/name of parsing strategy to use
+    :param str outfile: path to documentation output file
+    :param bool no_mod_docstr: whether to exclude the module-level docstring,
+        if present
+    :param bool include_inherited: whether to document inherited members
+    :param Iterable[str] whitelist: names of doc targets to include
+    :param Iterable[str] blacklist: names of doc targets to exclude
+    """
+    if whitelist and blacklist:
+        raise ValueError("Cannot specify both whitelist and blacklist")
     try:
         sys.path.append(os.getcwd())
         # Attempt import
-        mod = pydoc.safeimport(pkg)
-        if mod is None:
+        pkg_obj = pydoc.safeimport(pkg)
+        if pkg_obj is None:
             raise LucidocError("ERROR -- Target object for documentation not "
                                "found: {}".format(pkg))
     except pydoc.ErrorDuringImport:
-        print("Error while trying to import module {}".format(pkg))
+        print("Failed to import '{}'".format(pkg))
         raise
     else:
         show_tag = MdTagRenderer()
         parse = get_parser(parse_style)
-        doc = doc_module(mod, parse, show_tag, no_mod_docstr, include_inherited)
+        doc = doc_module(pkg_obj, parse, show_tag, no_mod_docstr, include_inherited)
         if outfile:
             outdir = os.path.dirname(outfile)
             if outdir and not os.path.isdir(outdir):
