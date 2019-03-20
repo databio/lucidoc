@@ -1,7 +1,7 @@
 """ Docstring styling """
 
 import abc
-from .exceptions import lucidocError
+from .exceptions import LucidocError
 
 __author__ = "Vince Reuter"
 __email__ = "vreuter@virginia.edu"
@@ -56,7 +56,7 @@ STYLERS = {
 }
 
 
-class UnknownStylerError(lucidocError):
+class UnknownStylerError(LucidocError):
     """ Exception for request of unsupported styling strategy. """
 
     def __init__(self, name):

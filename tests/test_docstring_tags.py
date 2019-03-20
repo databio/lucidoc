@@ -154,7 +154,7 @@ def test_multiple_returns(pool, ds_spec, parser):
     print("POOL:\n{}\n".format(
         "\n".join("{}: {}".format(k, v) for k, v in pool.items())))
     print("DS:\n{}".format(ds))
-    with pytest.raises(lucidoc.lucidocError):
+    with pytest.raises(lucidoc.LucidocError):
         parser._parse(ds)
 
 
