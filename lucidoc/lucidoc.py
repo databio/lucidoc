@@ -149,7 +149,7 @@ def doc_module(mod, docstr_parser, render_tag,
         declared = set()
         use_obj = retain or (lambda _: True)
 
-    all_targets = list(filter(use_obj, _get_targets(mod)))
+    all_targets = [(n, o) for n, o in _get_targets(mod) if use_obj(n)]
     print(os.linesep.join(["All doc targets:"] + [n for n, _ in all_targets]))
 
     def collect_targets_by_name():
@@ -200,7 +200,7 @@ def doc_module(mod, docstr_parser, render_tag,
         chunk_groups = {g: [(n, all_targets[n]) for n in ns] for g, ns in groups}
         grouped_results = {g: build_doc_block(nt_pairs, prepare_targets)
                            for g, nt_pairs in chunk_groups.items()}
-        return {g: "\n".join(map(str, chunks))
+        return {g: "\n".join(map(str, output + chunks))
                 for g, chunks in grouped_results.items()}
     else:
         def prepare_targets(named_targets):
@@ -214,7 +214,7 @@ def doc_module(mod, docstr_parser, render_tag,
             return [(n, t, doc_cls) for n, t in classes] + \
                    [(n, t, doc_fun) for n, t in functions]
         chunks = build_doc_block(all_targets.items(), prepare_targets)
-        return "\n".join(map(str, chunks))
+        return "\n".join(map(str, output + chunks))
 
 
 def doc_class(cls, docstr_parser, render_tag, include_inherited):
@@ -456,7 +456,9 @@ def _determine_retention_strategy(whitelist, blacklist, groups):
         return lambda n: n not in set(blacklist)
     # Reaching this point implies that either whitelist XOR blacklist is nonempty.
     pool = set(whitelist if whitelist else itertools.chain(*[names for _, names in groups]))
-    return lambda n: n in pool
+    def ret(n):
+        return n in pool
+    return ret
 
 
 def _standardize_groups_type(groups):
@@ -521,7 +523,7 @@ def run_lucidoc(pkg, parse_style, outfile=None, outfolder=None,
             pkg_obj, parse, show_tag, no_mod_docstr=no_mod_docstr,
             include_inherited=include_inherited, retain=retain, groups=groups)
         if groups:
-            outfolder = outfolder or os.getcwd()
+            outfolder = expandpath(outfolder or os.getcwd())
             print("Base output folder: {}".format(outfolder))
             missing, invalid = [], []
             for g, _ in groups:
@@ -565,11 +567,26 @@ def run_lucidoc(pkg, parse_style, outfile=None, outfolder=None,
 def main():
     """ Main workflow """
     opts = _parse_args(sys.argv[1:])
-    run_lucidoc(opts.pkgpath, opts.parse, opts.output,
+    if opts.output_groups:
+        groups = []
+        seen = set()
+        for gspec in opts.output_groups:
+            try:
+                group, name_spec = gspec.split("=")
+            except ValueError:
+                raise ValueError("Illegal output groups specification; "
+                                 "please check usage with --help")
+            if group in seen:
+                raise ValueError("Duplicated group name: {}".format(group))
+            seen.add(group)
+            groups.append((group, name_spec.split(",")))
+    else:
+        groups = None
+    run_lucidoc(opts.pkgpath, opts.parse,
+                outfile=opts.outfile, outfolder=opts.outfolder,
                 no_mod_docstr=opts.skip_module_docstring,
                 include_inherited=opts.inherited,
-                whitelist=opts.whitelist, blacklist=opts.blacklist,
-                groups=opts.output_groups)
+                whitelist=opts.whitelist, blacklist=opts.blacklist, groups=groups)
     
 
 if __name__ == '__main__':
