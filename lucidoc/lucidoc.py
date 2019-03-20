@@ -465,11 +465,9 @@ def _standardize_groups_type(groups):
     """ Ensure a consistent way of handling the type/structure of groups spec. """
     if not groups:
         return None
-    if isinstance(groups, Iterable):
-        return groups
-    try:
+    if isinstance(groups, Mapping):
         return list(groups.items())
-    except AttributeError:
+    if not isinstance(groups, Iterable) or isinstance(groups, str):
         raise TypeError("Groups specification must be mapping or collection of "
                         "pairs; got {} ({})".format(groups, type(groups)))
 
