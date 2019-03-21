@@ -152,7 +152,6 @@ def doc_module(mod, docstr_parser, render_tag,
         use_obj = retain or (lambda _: True)
 
     all_targets = [(n, o) for n, o in _get_targets(mod) if use_obj(n)]
-    print(os.linesep.join(["All doc targets:"] + [n for n, _ in all_targets]))
 
     def collect_targets_by_name():
         m = defaultdict(list)
@@ -350,11 +349,9 @@ def doc_callable(f, docstr_parser, render_tag, name=None):
 
     head = function_header.format(n.replace('_', '\\_'))
 
-    try:
-        pars = pydoc.inspect.formatargspec(*pydoc.inspect.getargspec(f))
-    except TypeError:
-        pars = None
-    signature = "```python\ndef {}{}:\n```\n".format(n, pars or "")
+    signature = "```python\ndef {}{}:\n```\n".format(
+        n, "(self)" if isinstance(f, property) else
+            pydoc.inspect.formatargspec(*pydoc.inspect.getargspec(f)))
 
     res = [head]
     ds = pydoc.inspect.getdoc(f)
