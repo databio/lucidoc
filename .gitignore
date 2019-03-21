@@ -4,4 +4,6 @@ test.py
 .coverage
 dist/
 *.egg-info/
+build/
+.eggs/
 
