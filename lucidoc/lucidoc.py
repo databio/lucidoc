@@ -18,6 +18,11 @@ import os
 import pydoc
 import sys
 
+if sys.version_info < (3, 0):
+    from inspect import getargspec as args_spec
+else:
+    from inspect import getfullargspec as args_spec
+
 if sys.version_info < (3, 3):
     from collections import Mapping
 else:
@@ -343,7 +348,7 @@ def doc_callable(f, docstr_parser, render_tag, name=None):
             n = f.__name__
         except AttributeError:
             raise LucidocError("No name for object of {}; explicitly pass name "
-                              "if documenting a property".format(type(f)))
+                               "if documenting a property".format(type(f)))
 
     print("Processing function: {}".format(n))
 
@@ -351,7 +356,7 @@ def doc_callable(f, docstr_parser, render_tag, name=None):
 
     signature = "```python\ndef {}{}\n```\n".format(
         n, "(self)" if isinstance(f, property) else
-            pydoc.inspect.formatargspec(*pydoc.inspect.getargspec(f)))
+            pydoc.inspect.formatargspec(*args_spec(f)))
 
     res = [head]
     ds = pydoc.inspect.getdoc(f)
@@ -420,7 +425,7 @@ def _proc_objs(root, proc, select=None, pred=None):
     :return list[str]: collection of documentation chunks
     """
     pred = pred or (lambda _1, _2: True)
-    nargs = len(inspect.getargspec(proc).args)
+    nargs = len(args_spec(proc).args)
     if nargs == 1:
         do = lambda _, o: proc(o)
     elif nargs == 2:
@@ -448,7 +453,7 @@ def _determine_retention_strategy(whitelist, blacklist, groups):
     if (whitelist and (groups or blacklist)) or \
             (blacklist and (whitelist or groups)) or \
             (groups and (blacklist or whitelist)):
-        raise ValueError("Only one retention strategy may be specified")
+        raise LucidocError("Only one retention strategy may be specified")
     if not whitelist and not blacklist and not groups:
         return lambda _: True
     if blacklist:
