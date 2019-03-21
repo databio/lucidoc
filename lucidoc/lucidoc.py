@@ -133,6 +133,7 @@ def doc_module(mod, docstr_parser, render_tag,
     if groups:
         if isinstance(groups, Mapping):
             groups = list(groups.items())
+        groups = [(g, [ns] if isinstance(ns, str) else ns) for g, ns in groups]
         try:
             declared = set(itertools.chain(*[ns for _, ns in groups]))
         except ValueError:
@@ -490,18 +491,18 @@ def run_lucidoc(pkg, parse_style, outfile=None, outfolder=None,
     :param Iterable[str] blacklist: names of doc targets to exclude
     :param Mapping[str, str | Iterable[str]] | Iterable[(str, str | Iterable[str])] groups:
         pairing of group name with either single target name or collection of target names
-    :raise ValueError: if passing both output file and output folder, or if
+    :raise LucidocError: if passing both output file and output folder, or if
         passing output file and using groups
     """
 
     if outfile and outfolder:
-        raise ValueError("Cannot specify both output file and output folder")
+        raise LucidocError("Cannot specify both output file and output folder")
 
     groups = _standardize_groups_type(groups)
     retain = _determine_retention_strategy(whitelist, blacklist, groups)
 
     if groups and outfile:
-        raise ValueError(
+        raise LucidocError(
             "Cannot use output file with groups; to control output destination, "
             "consider output folder and each group names as filename.")
 
