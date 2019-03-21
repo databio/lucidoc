@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unrealeased]
+## [0.2] - 2019-03-20
 ### Added
 - Support for specific inclusion/exclusion of objects for documentation.
 - Support specification of grouping objects into separate documentation files.
