@@ -113,7 +113,8 @@ def doc_module(mod, docstr_parser, render_tag,
     :param bool no_mod_docstr: skip module-level docstring
     :param bool include_inherited: include inherited members
     :param callable retain: positive selection (on/by name) of doc targets
-    :param Mapping[str, str | Container[str]]
+    :param Mapping[str, str | Iterable[str]] | Iterable[(str, str | Iterable[str])] groups:
+        pairing of group name with either single target name or collection of target names
     :return str | Mapping[str, str]: Large block of Markdown-formatted
         documentation; alternatively, a mapping between group name and
         documentation block for the objects from that group
