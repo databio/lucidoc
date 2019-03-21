@@ -3,7 +3,7 @@
 import pytest
 import lucidoc
 from lucidoc.docparse import RST_EXAMPLE_TAG
-from conftest import build_args_space, powerset, CODE_EX1, CODE_EX2, DESC_KEY, \
+from tests.conftest import build_args_space, powerset, CODE_EX1, CODE_EX2, DESC_KEY, \
     EXS_KEY, HEADLINE, DETAIL_LINES, LONG_DESC_KEY, SHORT_DESC_KEY
 
 __author__ = "Vince Reuter"
@@ -44,8 +44,8 @@ def test_examples(pool, ds_spec, blank_line_sep):
 @pytest.mark.parametrize("pool",
     build_args_space(allow_empty=True,
         **{DESC_KEY: [{SHORT_DESC_KEY: h, LONG_DESC_KEY: d} for h, d in
-                      (HEADLINE, None), (None, DETAIL_LINES),
-                      (HEADLINE, DETAIL_LINES)]}
+                      [(HEADLINE, None), (None, DETAIL_LINES),
+                      (HEADLINE, DETAIL_LINES)]]}
     ))
 def test_description(pool, ds_spec, parser):
     """ Test proper parsing of short and/or long description. """

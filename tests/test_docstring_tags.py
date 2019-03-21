@@ -3,7 +3,7 @@
 import pytest
 import lucidoc
 
-from conftest import DESC_KEY, PAR_KEY, RET_KEY, ERR_KEY, EXS_KEY, TYPE_ERROR, \
+from tests.conftest import DESC_KEY, PAR_KEY, RET_KEY, ERR_KEY, EXS_KEY, TYPE_ERROR, \
     VALUE_ERROR, RETURN, RETURN_MUTLI_LINE, build_args_space, powerset
 
 __author__ = "Vince Reuter"
@@ -154,7 +154,7 @@ def test_multiple_returns(pool, ds_spec, parser):
     print("POOL:\n{}\n".format(
         "\n".join("{}: {}".format(k, v) for k, v in pool.items())))
     print("DS:\n{}".format(ds))
-    with pytest.raises(lucidoc.lucidocError):
+    with pytest.raises(lucidoc.LucidocError):
         parser._parse(ds)
 
 
