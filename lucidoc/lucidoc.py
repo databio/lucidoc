@@ -544,7 +544,7 @@ def run_lucidoc(pkg, parse_style, outfile=None, outfolder=None,
                 with open(fp, 'w') as f:
                     f.write(doc)
             if missing:
-                print("WARNING: output for {} group(s): {}".
+                print("WARNING: missing output for {} group(s): {}".
                       format(len(missing), ", ".join(missing)))
             if invalid:
                 print("WARNING: skipped writing {} group(s) on account of "
