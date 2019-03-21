@@ -3,7 +3,7 @@
 import pytest
 import lucidoc
 
-from conftest import DESC_KEY, PAR_KEY, RET_KEY, ERR_KEY, EXS_KEY, TYPE_ERROR, \
+from tests.conftest import DESC_KEY, PAR_KEY, RET_KEY, ERR_KEY, EXS_KEY, TYPE_ERROR, \
     VALUE_ERROR, RETURN, RETURN_MUTLI_LINE, build_args_space, powerset
 
 __author__ = "Vince Reuter"
