@@ -466,7 +466,9 @@ def _standardize_groups_type(groups):
         return None
     if isinstance(groups, Mapping):
         return list(groups.items())
-    if not isinstance(groups, Iterable) or isinstance(groups, str):
+    elif isinstance(groups, Iterable) and not isinstance(groups, str):
+        return groups
+    else:
         raise TypeError("Groups specification must be mapping or collection of "
                         "pairs; got {} ({})".format(groups, type(groups)))
 
