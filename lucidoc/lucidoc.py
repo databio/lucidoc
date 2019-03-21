@@ -349,7 +349,7 @@ def doc_callable(f, docstr_parser, render_tag, name=None):
 
     head = function_header.format(n.replace('_', '\\_'))
 
-    signature = "```python\ndef {}{}:\n```\n".format(
+    signature = "```python\ndef {}{}\n```\n".format(
         n, "(self)" if isinstance(f, property) else
             pydoc.inspect.formatargspec(*pydoc.inspect.getargspec(f)))
 
