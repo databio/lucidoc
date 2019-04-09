@@ -243,10 +243,6 @@ def doc_class(cls, docstr_parser, render_tag, include_inherited):
     if not isinstance(cls, type):
         raise TypeError(_type_err_message(type, cls))
 
-    # Arbiter of whether a class member should be documented.
-    def use_obj(name, _):
-        return _unprotected(name)
-
     print("Processing class: {}".format(cls.__name__))
 
     cls_doc = [class_header.format(cls.__name__)]
@@ -278,7 +274,9 @@ def doc_class(cls, docstr_parser, render_tag, include_inherited):
         cls_doc.append(block)
 
     # TODO: account for inherited properties, not just methods
-    eligible = lambda o: (pydoc.inspect.ismethod(o) or isinstance(o, property))
+    def eligible(o):
+        return pydoc.inspect.isfunction(o) or \
+               pydoc.inspect.ismethod(o) or isinstance(o, property)
 
     def inherited(f):
         try:
@@ -300,13 +298,16 @@ def doc_class(cls, docstr_parser, render_tag, include_inherited):
         def use_as_fun(o):
             return eligible(o) and (isinstance(o, property) or not inherited(o))
 
+    # Arbiter of whether a class member should be documented.
+    def use_obj(name, _):
+        return _unprotected(name)
+
     func_docs = _proc_objs(
-        cls,
-        lambda n, f: doc_callable(f, docstr_parser, render_tag, name=n),
-        use_as_fun, use_obj)
+        root=cls, select=use_as_fun, pred=use_obj,
+        proc=lambda n, f: doc_callable(f, docstr_parser, render_tag, name=n))
     subcls_docs = _proc_objs(
-        cls, lambda c: doc_class(c, docstr_parser, render_tag, include_inherited),
-        pydoc.inspect.isclass, use_obj)
+        root=cls, select=pydoc.inspect.isclass, pred=use_obj,
+        proc=lambda c: doc_class(c, docstr_parser, render_tag, include_inherited))
     return cls_doc + func_docs + subcls_docs
 
 
@@ -450,8 +451,8 @@ def _proc_objs(root, proc, select=None, pred=None):
     else:
         raise ValueError("Processing function should take exactly 1 or 2 "
                          "arguments, not {}".format(nargs))
-    return list(itertools.chain(*[
-        do(n, o) for n, o in inspect.getmembers(root, select) if pred(n, o)]))
+    todo = [(n, o) for n, o in inspect.getmembers(root, select) if pred(n, o)]
+    return list(itertools.chain(*[do(n, o) for n, o in todo]))
 
 
 def _standardize_groups_type(groups):
