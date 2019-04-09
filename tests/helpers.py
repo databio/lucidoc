@@ -24,4 +24,3 @@ class SafeExec(object):
                 os.unlink(p)
             elif os.path.isdir(p):
                 shutil.rmtree(p)
-

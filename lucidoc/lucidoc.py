@@ -161,7 +161,15 @@ def doc_module(mod, docstr_parser, render_tag,
             use_obj = lambda name: name in declared
     else:
         declared = set()
-        use_obj = retain or (lambda _: True)
+        # DEBUG
+        def use_obj(o):
+            print("TESTING: {}".format(o))
+            return retain(o) if retain else True
+        #use_obj = retain or (lambda _: True)
+
+    # DEBUG
+    print("MODNAME: {}".format(mod.__name__))
+    print("ALL TARGETS:\n" + "\n".join(n for n, _ in _get_targets(mod)))
 
     all_targets = [(n, o) for n, o in _get_targets(mod) if use_obj(n)]
 
@@ -435,6 +443,8 @@ def _get_targets(mod):
     try:
         exports = mod.__all__
     except AttributeError:
+        print("No exports declared; grabbing all members from module {}".
+              format(mod.__name__))
         return inspect.getmembers(mod)
     objs, missing = [], []
     for name in exports:
