@@ -166,8 +166,6 @@ def ds_spec(request):
     for pk in pks:
         if pk in request.fixturenames:
             pool = request.getfixturevalue(pk)
-            # DEBUG
-            print("POOL: {}".format(pool))
             kwargs = {k: v or None for k, v in pool.items()}
             return DocstringSpecification(**kwargs)
     raise Exception("Test case requesting docstring specification is not "
@@ -248,8 +246,6 @@ class DocstringSpecification(object):
     @property
     def all_tag_texts(self):
         """ Collection in which each element is the lines for one tag. """
-        # DEBUG
-        print("RETURNS: {}".format(self.returns))
         return self.params + self.returns + self.raises
 
     @property

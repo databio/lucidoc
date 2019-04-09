@@ -10,7 +10,6 @@ __author__ = "Vince Reuter"
 __email__ = "vreuter@virginia.edu"
 
 
-
 @pytest.mark.parametrize("blank_line_sep", [False, True])
 @pytest.mark.parametrize("pool", build_args_space(
     allow_empty=False,
@@ -20,16 +19,10 @@ __email__ = "vreuter@virginia.edu"
 def test_examples(pool, ds_spec, blank_line_sep):
     """ Check that number of example blocks parsed is as expected. """
     parser = lucidoc.RstDocstringParser()
-
     # Hack for post-hoc modification of specification fixture
     blank_space_param = "space_between_examples"
     setattr(ds_spec, blank_space_param, blank_line_sep)
-
     ds = ds_spec.render()
-    # DEBUG
-    print("POOL:\n{}\n".format(
-        "\n".join("{}: {}".format(k, v) for k, v in pool.items())))
-    print("DS:\n{}".format(ds))
     exs = parser.examples(ds)
     num_ex_exp = ds.count(RST_EXAMPLE_TAG)
     num_ex_obs = sum(1 for _ in
