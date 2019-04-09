@@ -80,25 +80,32 @@ def _parse_args(cmdl):
     selection = parser.add_mutually_exclusive_group()
     selection.add_argument(
         "--whitelist",
-        help="Names of objects to include in documentation")
+        help="Comma-separated list of names of objects to include in "
+             "documentation; this is mutually exclusive with --output-groups "
+             "and --blacklist")
     selection.add_argument(
         "--blacklist",
-        help="Names of objects to exclude from documentation")
+        help="Comma-separated list of names of objects to exclude from "
+             "documentation; this is mutually exclusive with --output-groups "
+             "and --whitelist")
     selection.add_argument(
         "--output-groups", nargs='*',
         help="Space-separated list of groups of objects to document together; "
              "if used, this should be specified as: "
              "--output-groups g1=obj1,obj2,... g2=objA,objB,..., ...; "
-             "i.e., spaces between groups and comma between group members")
+             "i.e., spaces between groups and comma between group members; "
+             "note mutual exclusivity with --whitelist and --blacklist")
 
     output = parser.add_mutually_exclusive_group()
     output.add_argument(
         "--outfile",
-        help="Path to file to which to write output")
+        help="Path to file to which to write output; this is mutually exclusive "
+             "with --outfolder")
     output.add_argument(
         "--outfolder",
         help="Path to folder in which to place output files; this can only be "
-             "used with --output-groups")
+             "used with --output-groups, and it's mutually exclusive with "
+             "--outfile")
 
     return parser.parse_args(cmdl)
 
@@ -394,13 +401,26 @@ def _determine_retention_strategy(whitelist, blacklist, groups):
         raise LucidocError("Only one retention strategy may be specified")
     if not whitelist and not blacklist and not groups:
         return lambda _: True
+    def check(coll):
+        if not is_collection_like(coll):
+            raise TypeError("Not a collection: {} ({})".format(coll, type(coll)))
     if blacklist:
+        check(blacklist)
         return lambda n: n not in set(blacklist)
-    # Reaching this point implies that either whitelist XOR blacklist is nonempty.
-    pool = set(whitelist if whitelist else itertools.chain(*[names for _, names in groups]))
-    def ret(n):
-        return n in pool
-    return ret
+    if whitelist:
+        check(whitelist)
+        return lambda n: n in set(whitelist)
+    if groups:
+        pool = []
+        check(groups)
+        for _, names in groups:
+            check(names)
+            pool.extend(names)
+        return lambda n: n in set(pool)
+    raise Exception(
+        "No implementation case matched arguments for whitelist, blacklist, and "
+        "groups for object retention strategy determination. Got {wl}, {bl}, "
+        "{gs}".format(wl=type(whitelist), bl=type(blacklist), gs=type(groups)))
 
 
 def _get_targets(mod):
@@ -456,7 +476,11 @@ def _proc_objs(root, proc, select=None, pred=None):
 
 
 def _standardize_groups_type(groups):
-    """ Ensure a consistent way of handling the type/structure of groups spec. """
+    """
+    Ensure a consistent way of handling the type/structure of groups spec.
+
+    :return Iterable[(object, object)]: collection of pairs
+    """
     if not groups:
         return None
     if isinstance(groups, Mapping):
@@ -505,8 +529,14 @@ def run_lucidoc(pkg, parse_style, outfile=None, outfolder=None,
     :param Iterable[str] blacklist: names of doc targets to exclude
     :param Mapping[str, str | Iterable[str]] | Iterable[(str, str | Iterable[str])] groups:
         pairing of group name with either single target name or collection of target names
+    :raise TypeError: if passing an argument to whitelist or blacklist that's
+        not a non-string collection, or if passing an argument to groups in
+        which a group's names isn't a non-string collection
     :raise LucidocError: if passing both output file and output folder, or if
-        passing output file and using groups
+        passing output file and using groups; or if using more than one of
+        whitelist, blacklist, and groups
+    :raise pydoc.ErrorDuringImport: if the argument to the package parameter
+        (pkg) cannot be imported
     """
 
     if outfile and outfolder:
@@ -572,7 +602,9 @@ def run_lucidoc(pkg, parse_style, outfile=None, outfolder=None,
 
 def main():
     """ Main workflow """
+
     opts = _parse_args(sys.argv[1:])
+
     if opts.output_groups:
         groups = []
         seen = set()
@@ -588,11 +620,18 @@ def main():
             groups.append((group, name_spec.split(",")))
     else:
         groups = None
+
+    def split_names(arg):
+        return arg.split(",") if arg else []
+
     run_lucidoc(opts.pkgpath, opts.parse,
-                outfile=opts.outfile, outfolder=opts.outfolder,
+                outfile=opts.outfile,
+                outfolder=opts.outfolder,
                 no_mod_docstr=opts.skip_module_docstring,
                 include_inherited=opts.inherited,
-                whitelist=opts.whitelist, blacklist=opts.blacklist, groups=groups)
+                whitelist=split_names(opts.whitelist),
+                blacklist=split_names(opts.blacklist),
+                groups=groups)
     
 
 if __name__ == '__main__':
