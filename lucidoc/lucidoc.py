@@ -385,6 +385,23 @@ def doc_callable(f, docstr_parser, render_tag, name=None):
     return res
 
 
+def _determine_retention_strategy(whitelist, blacklist, groups):
+    """ Validate and determine how to implement specification of target seeking behavior. """
+    if (whitelist and (groups or blacklist)) or \
+            (blacklist and (whitelist or groups)) or \
+            (groups and (blacklist or whitelist)):
+        raise LucidocError("Only one retention strategy may be specified")
+    if not whitelist and not blacklist and not groups:
+        return lambda _: True
+    if blacklist:
+        return lambda n: n not in set(blacklist)
+    # Reaching this point implies that either whitelist XOR blacklist is nonempty.
+    pool = set(whitelist if whitelist else itertools.chain(*[names for _, names in groups]))
+    def ret(n):
+        return n in pool
+    return ret
+
+
 def _get_targets(mod):
     """
     Determine given module's targets for documentation.
@@ -437,34 +454,6 @@ def _proc_objs(root, proc, select=None, pred=None):
         do(n, o) for n, o in inspect.getmembers(root, select) if pred(n, o)]))
 
 
-def _type_err_message(exp_type, obs_value):
-    """ Create message for TypeError when value doesn't match expectation. """
-    return "Expected {} but got {} ({})".format(
-            exp_type, obs_value, type(obs_value))
-
-
-def _unprotected(name):
-    """ Determine whether object name suggests its not protected. """
-    return not name.startswith("_")
-
-
-def _determine_retention_strategy(whitelist, blacklist, groups):
-    """ Validate and determine how to implement specification of target seeking behavior. """
-    if (whitelist and (groups or blacklist)) or \
-            (blacklist and (whitelist or groups)) or \
-            (groups and (blacklist or whitelist)):
-        raise LucidocError("Only one retention strategy may be specified")
-    if not whitelist and not blacklist and not groups:
-        return lambda _: True
-    if blacklist:
-        return lambda n: n not in set(blacklist)
-    # Reaching this point implies that either whitelist XOR blacklist is nonempty.
-    pool = set(whitelist if whitelist else itertools.chain(*[names for _, names in groups]))
-    def ret(n):
-        return n in pool
-    return ret
-
-
 def _standardize_groups_type(groups):
     """ Ensure a consistent way of handling the type/structure of groups spec. """
     if not groups:
@@ -476,6 +465,26 @@ def _standardize_groups_type(groups):
     else:
         raise TypeError("Groups specification must be mapping or collection of "
                         "pairs; got {} ({})".format(groups, type(groups)))
+
+
+def _type_err_message(exp_type, obs_value):
+    """ Create message for TypeError when value doesn't match expectation. """
+    return "Expected {} but got {} ({})".format(
+            exp_type, obs_value, type(obs_value))
+
+
+def _unprotected(name):
+    """ Determine whether object name suggests its not protected. """
+    return not name.startswith("_")
+
+
+def _write_docs(fp, doc):
+    print("Writing docs: {}".format(fp))
+    d = os.path.dirname(fp)
+    if d and not os.path.isdir(d):
+        os.makedirs(d)
+    with open(fp, 'w') as f:
+        f.write(doc)
 
 
 def run_lucidoc(pkg, parse_style, outfile=None, outfolder=None,
@@ -544,10 +553,7 @@ def run_lucidoc(pkg, parse_style, outfile=None, outfolder=None,
                     fn = g
                 else:
                     fn = base + ".md"
-                fp = os.path.join(outfolder, fn)
-                print("Writing docs: {}".format(fp))
-                with open(fp, 'w') as f:
-                    f.write(doc)
+                _write_docs(os.path.join(outfolder, fn), doc)
             if missing:
                 print("WARNING: missing output for {} group(s): {}".
                       format(len(missing), ", ".join(missing)))
@@ -557,12 +563,7 @@ def run_lucidoc(pkg, parse_style, outfile=None, outfolder=None,
                       format(len(invalid), ", ".join(invalid)))
             print("Done.")
         elif outfile:
-            outdir = os.path.dirname(outfile)
-            if outdir and not os.path.isdir(outdir):
-                os.makedirs(outdir)
-            print("Writing docs: {}".format(outfile))
-            with open(outfile, 'w') as f:
-                f.write(doc_res)
+            _write_docs(outfile, doc_res)
             print("Done.")
         else:
             print(doc_res)
