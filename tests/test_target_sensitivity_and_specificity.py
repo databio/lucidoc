@@ -1,6 +1,5 @@
 """ Tests for responsiveness to different modes of target subset specfication """
 
-import glob
 import itertools
 import os
 import random
@@ -137,19 +136,35 @@ def test_whitelist_specificity(parse_style, target_package, whitelist, tmpdir):
         "{} unexpected doc target(s):\n{}".format(len(present), "\n".join(present))
 
 
-@pytest.mark.skip("Not implemented")
 def test_blacklist_sensitivity(parse_style, target_package, blacklist, tmpdir):
     """ Any blacklisted entity should be excluded. """
-    pass
+    contents = _exec_test(
+        tmpdir.strpath, target_package, parse_style, blacklist=blacklist)
+    bads = set(blacklist)
+    present = [n for n in bads if n in contents]
+    assert [] == present, \
+        "{} unexpected doc target(s):\n{}".format(len(present), "\n".join(present))
 
 
-@pytest.mark.skip("Not implemented")
 def test_blacklist_specificity(parse_style, target_package, blacklist, tmpdir):
     """ Available, non-blacklisted entities should be used/included. """
-    pass
+    contents = _exec_test(
+        tmpdir.strpath, target_package, parse_style, blacklist=blacklist)
+    goods = set(CLASS_NAMES) - set(blacklist)
+    missing = [n for n in goods if n not in contents]
+    assert [] == missing, \
+        "{} missing doc target(s):\n{}".format(len(missing), "\n".join(missing))
 
 
 def _exec_test(folder, pkg, parse_style, **kwargs):
+    """
+    Call lucidoc runner and parse the output file's contents.
+
+    :param str folder: path to test's root temp folder
+    :param str pkg: name of package to test document
+    :param str parse_style: name of the parsing style
+    :returns str: output file's contents
+    """
     fn = "".join(random.choice(string.ascii_letters) for _ in range(15)) + ".md"
     outfile = os.path.join(folder, fn)
     with TmpPathContext(folder):
