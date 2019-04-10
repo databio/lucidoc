@@ -161,16 +161,11 @@ def doc_module(mod, docstr_parser, render_tag,
             use_obj = lambda name: name in declared
     else:
         declared = set()
-        # DEBUG
         def use_obj(o):
-            print("TESTING: {}".format(o))
             return retain(o) if retain else True
-        #use_obj = retain or (lambda _: True)
 
-    # DEBUG
-    print("MODNAME: {}".format(mod.__name__))
-    print("ALL TARGETS:\n" + "\n".join(n for n, _ in _get_targets(mod)))
-
+    # Get the initial full collection of targets, and store this to close
+    # the target collection function around these values.
     all_targets = [(n, o) for n, o in _get_targets(mod) if use_obj(n)]
 
     def collect_targets_by_name():

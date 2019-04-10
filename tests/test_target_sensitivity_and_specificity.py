@@ -21,9 +21,19 @@ CLS3 = "Arbitrary"
 CLASS_NAMES = [CLS1, CLS2, CLS3]
 
 
+def _make_exports_declaration(names):
+    """
+    Create a module's declaration of exported members.
+
+    :param Iterable[str] names: names that should be declared as exports
+    :return str: the export declaration specification
+    """
+    return "__all__ = [{}]".format(", ".join("\"{}\"".format(n) for n in names))
+
+
 LINES = """
 __author__ = "Vince Reuter"
-__all__ = [{cs}]
+{exports}
 
 class {c1}(object):
     
@@ -40,7 +50,7 @@ class {c2}(object):
 
 class {c3}(object):
     pass
-""".format(cs=", ".join("\"{}\"".format(n) for n in CLASS_NAMES),
+""".format(exports=_make_exports_declaration(CLASS_NAMES),
            c1=CLS1, c2=CLS2, c3=CLS3).splitlines(False)
 
 
@@ -73,24 +83,37 @@ def target_package(request, tmpdir):
     pkg = "".join(random.choice(string.ascii_lowercase) for _ in range(10))
     pkg_dir = os.path.join(tmpdir.strpath, pkg)
     os.makedirs(pkg_dir)
-    fn = "".join(random.choice(string.ascii_letters) for _ in range(15)) + ".py"
+    file_name_base = "".join(
+        random.choice(string.ascii_letters) for _ in range(15))
+    filename = file_name_base + ".py"
     # DEBUG
     print("LINES:\n" + "\n".join(lines))
-    with open(os.path.join(pkg_dir, fn), 'w') as f:
+    with open(os.path.join(pkg_dir, filename), 'w') as f:
         f.write("\n".join(lines))
-    with open(os.path.join(pkg_dir, "__init__.py"), 'w'):
-        return pkg
+    init_lines = [
+        "from {} import *".format(file_name_base),
+        _make_exports_declaration(CLASS_NAMES)]
+    with open(os.path.join(pkg_dir, "__init__.py"), 'w') as f:
+        f.write("\n\n".join(init_lines))
+    return pkg
 
 
 def pytest_generate_tests(metafunc):
     """ Module-level test case parameterization """
+
+    def param_class_names(mf, fix_name):
+        if fix_name in mf.fixturenames:
+            mf.parametrize(fix_name, list(itertools.chain(*[
+                itertools.combinations(CLASS_NAMES, k)
+                for k in range(1, 1 + len(CLASS_NAMES))])))
+
     # Tests should hold regardless of parser style.
     metafunc.parametrize("parse_style", PARSERS.keys())
 
+    param_class_names(metafunc, "whitelist")
+    param_class_names(metafunc, "blacklist")
 
-@pytest.mark.parametrize("whitelist",
-    list(itertools.chain(*[itertools.combinations(CLASS_NAMES, k)
-                           for k in range(1, 1 + len(CLASS_NAMES))])))
+
 def test_whitelist_sensitivity(parse_style, target_package, whitelist, tmpdir):
     """ Any available whitelisted entity should be used/included. """
     fn = "".join(random.choice(string.ascii_letters) for _ in range(15)) + ".md"
@@ -100,36 +123,37 @@ def test_whitelist_sensitivity(parse_style, target_package, whitelist, tmpdir):
                     outfile=outfile, whitelist=whitelist)
     with open(outfile, 'r') as f:
         contents = f.read()
-    goods = set(whitelist)
-    bads = set(CLASS_NAMES) - goods
-    missing = [n for n in goods if n not in contents]
-    present = [n for n in bads if n in contents]
+    missing = [n for n in set(whitelist) if n not in contents]
     # DEBUG
-    print("FILES:\n" + "\n".join(os.listdir(os.path.join(tmpdir.strpath, target_package))))
-    mods = [f for f in glob.glob(os.path.join(tmpdir.strpath, target_package, "*.py")) if not f.endswith("__init__.py")]
-    print("MODS: {}".format(mods))
-    with open(mods[0], 'r') as f:
-        print("MODULE:\n" + f.read())
-    print("CONTENTS:\n" + contents)
+    print("Files in package folder:\n" + "\n".join(
+        os.listdir(os.path.join(tmpdir.strpath, target_package))))
+    print("Outfile contents:\n" + contents)
     assert [] == missing, \
         "Missing {} doc target(s):\n{}".format(len(missing), "\n".join(missing))
+
+
+def test_whitelist_specificity(parse_style, target_package, whitelist, tmpdir):
+    """ Non whitelisted entities should be excluded. """
+    fn = "".join(random.choice(string.ascii_letters) for _ in range(15)) + ".md"
+    outfile = tmpdir.join(fn).strpath
+    with TmpPathContext(tmpdir.strpath):
+        run_lucidoc(target_package, parse_style=parse_style,
+                    outfile=outfile, whitelist=whitelist)
+    with open(outfile, 'r') as f:
+        contents = f.read()
+    bads = set(CLASS_NAMES) - set(whitelist)
+    present = [n for n in bads if n in contents]
     assert [] == present, \
         "{} unexpected doc target(s):\n{}".format(len(present), "\n".join(present))
 
 
 @pytest.mark.skip("Not implemented")
-def test_whitelist_specificity(parse_style):
-    """ Non whitelisted entities should be excluded. """
-    pass
-
-
-@pytest.mark.skip("Not implemented")
-def test_blacklist_sensitivity(parse_style):
+def test_blacklist_sensitivity(parse_style, target_package, blacklist, tmpdir):
     """ Any blacklisted entity should be excluded. """
     pass
 
 
 @pytest.mark.skip("Not implemented")
-def test_blacklist_specificity(parse_style):
+def test_blacklist_specificity(parse_style, target_package, blacklist, tmpdir):
     """ Available, non-blacklisted entities should be used/included. """
     pass
