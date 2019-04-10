@@ -116,13 +116,8 @@ def pytest_generate_tests(metafunc):
 
 def test_whitelist_sensitivity(parse_style, target_package, whitelist, tmpdir):
     """ Any available whitelisted entity should be used/included. """
-    fn = "".join(random.choice(string.ascii_letters) for _ in range(15)) + ".md"
-    outfile = tmpdir.join(fn).strpath
-    with TmpPathContext(tmpdir.strpath):
-        run_lucidoc(target_package, parse_style=parse_style,
-                    outfile=outfile, whitelist=whitelist)
-    with open(outfile, 'r') as f:
-        contents = f.read()
+    contents = _exec_test(
+        tmpdir.strpath, target_package, parse_style, whitelist=whitelist)
     missing = [n for n in set(whitelist) if n not in contents]
     # DEBUG
     print("Files in package folder:\n" + "\n".join(
@@ -134,13 +129,8 @@ def test_whitelist_sensitivity(parse_style, target_package, whitelist, tmpdir):
 
 def test_whitelist_specificity(parse_style, target_package, whitelist, tmpdir):
     """ Non whitelisted entities should be excluded. """
-    fn = "".join(random.choice(string.ascii_letters) for _ in range(15)) + ".md"
-    outfile = tmpdir.join(fn).strpath
-    with TmpPathContext(tmpdir.strpath):
-        run_lucidoc(target_package, parse_style=parse_style,
-                    outfile=outfile, whitelist=whitelist)
-    with open(outfile, 'r') as f:
-        contents = f.read()
+    contents = _exec_test(
+        tmpdir.strpath, target_package, parse_style, whitelist=whitelist)
     bads = set(CLASS_NAMES) - set(whitelist)
     present = [n for n in bads if n in contents]
     assert [] == present, \
@@ -157,3 +147,12 @@ def test_blacklist_sensitivity(parse_style, target_package, blacklist, tmpdir):
 def test_blacklist_specificity(parse_style, target_package, blacklist, tmpdir):
     """ Available, non-blacklisted entities should be used/included. """
     pass
+
+
+def _exec_test(folder, pkg, parse_style, **kwargs):
+    fn = "".join(random.choice(string.ascii_letters) for _ in range(15)) + ".md"
+    outfile = os.path.join(folder, fn)
+    with TmpPathContext(folder):
+        run_lucidoc(pkg, parse_style, outfile=outfile, **kwargs)
+    with open(outfile, 'r') as f:
+        return f.read()
