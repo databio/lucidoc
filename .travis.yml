@@ -9,7 +9,10 @@ install:
   - pip install --upgrade six
   - pip install .
   - pip install -r requirements/requirements-dev.txt
+  - pip install -r requirements/requirements-test.txt
 script: pytest --cov=peppy
+after_success:
+  - coveralls
 branches:
   only:
     - dev
