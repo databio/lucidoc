@@ -28,6 +28,8 @@ if sys.version_info < (3, 3):
 else:
     from collections.abc import Mapping
 
+from logmuse import setup_logger
+
 from .helpers import *
 from .docparse import get_parser, RST_KEY
 from .doctags import MdTagRenderer
@@ -40,6 +42,9 @@ function_header = "### {}"
 
 
 __all__ = ["doc_class", "doc_callable", "doc_module", "run_lucidoc"]
+
+
+_LOGGER = None
 
 
 class _VersionInHelpParser(argparse.ArgumentParser):
@@ -149,13 +154,14 @@ def doc_module(mod, docstr_parser, render_tag,
         try:
             declared = set(itertools.chain(*[ns for _, ns in groups]))
         except ValueError:
-            print("ERROR: failed to parse target names from groups "
-                  "declaration; ensure that groups are specified as a "
-                  "mapping or as a collection of pairs.")
+            _LOGGER.error(
+                "Failed to parse target names from groups declaration; ensure "
+                "that groups are specified as a mapping or as a collection of pairs.")
             raise
         if retain:
-            print("Groups provided; only declared group members will be used "
-                  "in documentation")
+            _LOGGER.debug(
+                "Groups provided; only declared group members will be used "
+                "in documentation")
             use_obj = lambda name: retain(name) and name in declared
         else:
             use_obj = lambda name: name in declared
@@ -187,8 +193,8 @@ def doc_module(mod, docstr_parser, render_tag,
 
     missing_targets = declared - set(all_targets.keys())
     if missing_targets:
-        print("WARNING: {} target(s) missing: {}".
-              format(len(missing_targets), ", ".join(missing_targets)))
+        _LOGGER.warning("{} target(s) missing: {}".format(
+            len(missing_targets), ", ".join(missing_targets)))
 
     # Header and module docstring
     output = [module_header.format(mod.__name__)]
@@ -253,7 +259,7 @@ def doc_class(cls, docstr_parser, render_tag, include_inherited):
     if not isinstance(cls, type):
         raise TypeError(_type_err_message(type, cls))
 
-    print("Processing class: {}".format(cls.__name__))
+    _LOGGER.info("Processing class: {}".format(cls.__name__))
 
     cls_doc = [class_header.format(cls.__name__)]
     class_docstr = pydoc.inspect.getdoc(cls)
@@ -269,14 +275,15 @@ def doc_class(cls, docstr_parser, render_tag, include_inherited):
             block_lines.append("\n")
         if parsed_clsdoc.returns:
             raise LucidocError("Class docstring has a return value: {}".
-                              format(parsed_clsdoc.returns))
+                               format(parsed_clsdoc.returns))
         if err_tag_lines:
             block_lines.append("**Raises:**\n")
             block_lines.extend(err_tag_lines)
             block_lines.append("\n")
         if parsed_clsdoc.examples:
             if not isinstance(parsed_clsdoc.examples, list):
-                raise TypeError("Example lines are {}, not list".format(type(parsed_clsdoc.examples)))
+                raise TypeError("Example lines are {}, not list".
+                                format(type(parsed_clsdoc.examples)))
             block_lines.append("**Example(s):**\n")
             block_lines.extend(parsed_clsdoc.examples)
             block_lines.append("\n")
@@ -361,7 +368,7 @@ def doc_callable(f, docstr_parser, render_tag, name=None):
             raise LucidocError("No name for object of {}; explicitly pass name "
                                "if documenting a property".format(type(f)))
 
-    print("Processing function: {}".format(n))
+    _LOGGER.info("Processing function: {}".format(n))
 
     head = function_header.format(n.replace('_', '\\_'))
 
@@ -438,8 +445,8 @@ def _get_targets(mod):
     try:
         exports = mod.__all__
     except AttributeError:
-        print("No exports declared; grabbing all members from module {}".
-              format(mod.__name__))
+        _LOGGER.debug("No exports declared; grabbing all members from module {}".
+                      format(mod.__name__))
         return inspect.getmembers(mod)
     objs, missing = [], []
     for name in exports:
@@ -509,7 +516,7 @@ def _unprotected(name):
 
 
 def _write_docs(fp, doc):
-    print("Writing docs: {}".format(fp))
+    _LOGGER.info("Writing docs: {}".format(fp))
     d = os.path.dirname(fp)
     if d and not os.path.isdir(d):
         os.makedirs(d)
@@ -519,7 +526,7 @@ def _write_docs(fp, doc):
 
 def run_lucidoc(pkg, parse_style, outfile=None, outfolder=None,
                 no_mod_docstr=False, include_inherited=False,
-                whitelist=None, blacklist=None, groups=None):
+                whitelist=None, blacklist=None, groups=None, **log_kwargs):
     """
     Discover docstrings and create package API documentation in Markdown.
 
@@ -544,6 +551,9 @@ def run_lucidoc(pkg, parse_style, outfile=None, outfolder=None,
         (pkg) cannot be imported
     """
 
+    global _LOGGER
+    _LOGGER = setup_logger(**log_kwargs)
+
     if outfile and outfolder:
         raise LucidocError("Cannot specify both output file and output folder")
 
@@ -563,7 +573,7 @@ def run_lucidoc(pkg, parse_style, outfile=None, outfolder=None,
             raise LucidocError(
                 "ERROR -- Documentation target not found: {}".format(pkg))
     except pydoc.ErrorDuringImport:
-        print("Failed to import '{}'".format(pkg))
+        _LOGGER.error("Failed to import '{}'".format(pkg))
         raise
     else:
         show_tag = MdTagRenderer()
@@ -573,7 +583,7 @@ def run_lucidoc(pkg, parse_style, outfile=None, outfolder=None,
             include_inherited=include_inherited, retain=retain, groups=groups)
         if groups:
             outfolder = expandpath(outfolder or os.getcwd())
-            print("Base output folder: {}".format(outfolder))
+            _LOGGER.debug("Base output folder: {}".format(outfolder))
             missing, invalid = [], []
             for g, _ in groups:
                 try:
@@ -591,16 +601,17 @@ def run_lucidoc(pkg, parse_style, outfile=None, outfolder=None,
                     fn = base + ".md"
                 _write_docs(os.path.join(outfolder, fn), doc)
             if missing:
-                print("WARNING: missing output for {} group(s): {}".
-                      format(len(missing), ", ".join(missing)))
+                _LOGGER.warning(
+                    "Missing output for {} group(s): {}".
+                    format(len(missing), ", ".join(missing)))
             if invalid:
-                print("WARNING: skipped writing {} group(s) on account of "
-                      "illegal output file extension: {}".
-                      format(len(invalid), ", ".join(invalid)))
-            print("Done.")
+                _LOGGER.warning(
+                    "Skipped writing {} group(s) on account of illegal output "
+                    "file extension: {}".format(len(invalid), ", ".join(invalid)))
+            _LOGGER.info("Done.")
         elif outfile:
             _write_docs(outfile, doc_res)
-            print("Done.")
+            _LOGGER.info("Done.")
         else:
             print(doc_res)
 
