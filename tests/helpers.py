@@ -23,7 +23,7 @@ def exec_test(folder, pkg, parse_style, **kwargs):
     """
     fn = "".join(random.choice(string.ascii_letters) for _ in range(15)) + ".md"
     outfile = os.path.join(folder, fn)
-    with TmpPathContext(folder):
+    with TmpTestCtx(folder):
         run_lucidoc(pkg, parse_style, outfile=outfile, **kwargs)
     with open(outfile, 'r') as f:
         return f.read()
@@ -57,7 +57,7 @@ class SafeExec(object):
                 shutil.rmtree(p)
 
 
-class TmpPathContext(object):
+class TmpTestCtx(object):
     """ Temporarily alter the state of sys.path. """
 
     def __init__(self, p):

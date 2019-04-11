@@ -224,9 +224,11 @@ def target_package(request, tmpdir):
     assert [] == [f for f in os.listdir(pkg_dir) if f.endswith(".pyc")]
     with open(os.path.join(pkg_dir, filename), 'w') as f:
         f.write("\n".join(lines))
+    exports = request.getfixturevalue("exports") \
+        if "exports" in request.fixturenames else CLASS_NAMES
     init_lines = [
         "from .{} import *".format(file_name_base),
-        make_exports_declaration(CLASS_NAMES)]
+        make_exports_declaration(exports)]
     with open(os.path.join(pkg_dir, "__init__.py"), 'w') as f:
         f.write("\n\n".join(init_lines))
     return pkg
