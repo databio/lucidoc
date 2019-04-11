@@ -57,6 +57,10 @@ def test_export_sensitivity(
         tmpdir, target_package, parse_style, exports, modlines):
     """ Each exported member is documented. """
     try_cat_module(os.path.join(tmpdir.strpath, target_package))
+    print("tmpdir contents: {}".format(os.listdir(tmpdir.strpath)))
+    print("package: {}".format(target_package))
+    print("package contents: {}".format(os.listdir(
+        os.path.join(tmpdir.strpath, target_package))))
     contents = exec_test(tmpdir.strpath, target_package, parse_style)
     missing = [n for n in exports if n not in contents]
     assert [] == missing, \
@@ -67,6 +71,10 @@ def test_export_specificifty(
         tmpdir, target_package, parse_style, exports, modlines):
     """ When exports are declared, only those members are documented. """
     try_cat_module(os.path.join(tmpdir.strpath, target_package))
+    print("tmpdir contents: {}".format(os.listdir(tmpdir.strpath)))
+    print("package: {}".format(target_package))
+    print("package contents: {}".format(os.listdir(
+        os.path.join(tmpdir.strpath, target_package))))
     contents = exec_test(tmpdir.strpath, target_package, parse_style)
     present = [n for n in set(CLASS_NAMES) - set(exports) if n in contents]
     assert [] == present, \
