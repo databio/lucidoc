@@ -445,25 +445,18 @@ def _get_targets(mod):
     try:
         exports = mod.__all__
     except AttributeError:
-        # DEBUG
-        print("NO EXPORTS")
         _LOGGER.debug("No exports declared; grabbing all members from module {}".
                       format(mod.__name__))
         return inspect.getmembers(mod)
     _LOGGER.debug("Found {} members exported from module {}: {}".
                   format(len(exports), mod.__name__, ", ".join(exports)))
     objs, missing = [], []
-    # DEBUG
-    print("EXPORTS: {}".format(exports))
     for name in exports:
         try:
             objs.append((name, getattr(mod, name)))
         except AttributeError:
             missing.append(name)
     if missing:
-        # DEBUG
-        print("MOD: " + mod.__name__)
-        print("DIR(mod): {}".format(dir(mod)))
         raise Exception("Module is missing declared export(s): {}".
                         format(", ".join(missing)))
     return objs

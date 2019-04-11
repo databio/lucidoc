@@ -1,5 +1,6 @@
 """ Tests for handling of protected module/class members """
 
+import itertools
 import os
 import random
 import string
@@ -24,6 +25,7 @@ PROPERTY = "prop"
 
 MODLINES_TEMPLATE = """
 __author__ = "Vince Reuter"
+
 
 class {c1}(object):
 
@@ -58,6 +60,7 @@ def {f4}():
 """
 
 
+NESTING = {"c1": ["f1", "f2"], "c3": ["statfun", "prop"]}
 DATA = {"c1": CLS1, "f1": FUN1, "f2": FUN2, "f3": FUN3, "f4": FUN4,
         "c2": CLS2, "c3": CLS3, "statfun": STATIC_METHOD, "prop": PROPERTY}
 
@@ -108,18 +111,26 @@ def test_protection_sensitivity(
         tmpdir, target_package, parse_style, protected, modlines):
     """ Protected members are not documented. """
     output = exec_test(tmpdir.strpath, target_package, parse_style)
-    exp_hidden_names = {DATA[k] for k in protected}
-    present = {n for n in exp_hidden_names if n in output or "_" + n in output}
+    exp_absent_names = {n for k in protected for n in
+                        [DATA[k]] + [DATA[ksub] for ksub in NESTING.get(k, [])]}
+    present = {n for n in exp_absent_names if n in output or "_" + n in output}
     assert set() == present, "{} unexpected doc target(s):\n{}".\
         format(len(present), "\n".join(present))
 
 
-@pytest.mark.skip("not implemented")
 def test_protection_specificity(
         tmpdir, target_package, parse_style, protected, modlines):
     """ Unprotected members are documented. """
     output = exec_test(tmpdir.strpath, target_package, parse_style)
-    exp_present_names = {v for k, v in DATA.items() if k not in set(protected)}
+    prot_keys = set(protected) | \
+                set(itertools.chain(*[NESTING.get(k, []) for k in protected]))
+    exp_present_names = {v for k, v in DATA.items() if k not in prot_keys}
     missing = {n for n in exp_present_names if n not in output}
+    mods = [os.path.join(tmpdir.strpath, target_package, f) for f in
+            os.listdir(os.path.join(tmpdir.strpath, target_package))
+            if f != "__init__.py" and f.endswith(".py")]
+    assert 1 == len(mods)
+    with open(mods[0], 'r') as f:
+        print("Conents of file {}:\n".format(mods[0]) + f.read())
     assert set() == missing, \
         "Missing {} doc target(s):\n{}".format(len(missing), "\n".join(missing))
