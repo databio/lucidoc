@@ -265,7 +265,7 @@ def doc_module(mod, docstr_parser, render_tag,
         return postproc(head=output, blocks=chunks)
 
 
-def doc_class(cls, docstr_parser, render_tag, include_inherited):
+def doc_class(cls, docstr_parser, render_tag, include_inherited, nested=False):
     """
     For single class definition, get text components for Markdown documentation.
 
@@ -276,6 +276,7 @@ def doc_class(cls, docstr_parser, render_tag, include_inherited):
         passed as an argument should handle each type of DocTag that
         may be passed as an argument when this object is called.
     :param bool include_inherited: include inherited members
+    :param bool nested: whether the given target is nested within another class
     :return list[str]: text chunks constituting Markdown documentation for
         single class definition.
     """
@@ -287,7 +288,10 @@ def doc_class(cls, docstr_parser, render_tag, include_inherited):
 
     _LOGGER.info("Processing class: {}".format(cls.__name__))
 
-    cls_doc = [class_header.format(cls.__name__)]
+    head = class_header.format(cls.__name__)
+    if nested:
+        head = "#" + head
+    cls_doc = [head]
     class_docstr = pydoc.inspect.getdoc(cls)
     if class_docstr:
         parsed_clsdoc = docstr_parser(class_docstr)
@@ -350,7 +354,8 @@ def doc_class(cls, docstr_parser, render_tag, include_inherited):
         proc=lambda n, f: doc_callable(f, docstr_parser, render_tag, name=n))
     subcls_docs = _proc_objs(
         root=cls, select=pydoc.inspect.isclass, pred=use_obj,
-        proc=lambda c: doc_class(c, docstr_parser, render_tag, include_inherited))
+        proc=lambda c: doc_class(c, docstr_parser, render_tag,
+                                 include_inherited, nested=True))
     return cls_doc + func_docs + subcls_docs
 
 
