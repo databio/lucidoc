@@ -1,0 +1,22 @@
+site_name: Lucidoc
+site_url: http://code.databio.org/lucidoc/
+repo_url: http://github.com/databio/lucidoc
+
+nav:
+  - Introduction:
+    - Home: README.md
+  - Reference:
+    - API: autodoc_build/lucidoc.md
+    - Support: support.md
+    - Contributing: contributing.md
+    - Changelog: changelog.md
+
+theme: databio
+
+plugins:
+  - databio:
+      autodoc_build: "docs/autodoc_build"
+      autodoc_package: "lucidoc"
+      no_top_level: true
+  - search
+

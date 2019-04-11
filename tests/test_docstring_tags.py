@@ -22,11 +22,7 @@ def pytest_generate_tests(metafunc):
         allow_empty=False, **{PAR_KEY: None, RET_KEY: None, ERR_KEY: None}))
 def test_no_tags(pool, ds_spec, parser):
     """ When no tags are present, none are parsed. """
-    # DEBUG
-    print("POOL:\n{}\n".format(
-        "\n".join("{}: {}".format(k, v) for k, v in pool.items())))
     ds = ds_spec.render()
-    print("DS:\n{}".format(ds))
     assert_exp_line_count(ds, ds_spec)
     assert_exp_tag_count(ds, ds_spec, parser)
 
@@ -36,11 +32,7 @@ def test_no_tags(pool, ds_spec, parser):
         **{DESC_KEY: None, RET_KEY: None, ERR_KEY: None, EXS_KEY: None}))
 def test_only_params(pool, ds_spec, parser):
     """ When only return tag is present, it's used. """
-    # DEBUG
-    print("POOL:\n{}\n".format(
-        "\n".join("{}: {}".format(k, v) for k, v in pool.items())))
     ds = ds_spec.render()
-    print("DS:\n{}".format(ds))
     assert_exp_line_count(ds, ds_spec)
     assert_exp_tag_count(ds, ds_spec, parser)
     desc = parser.description(ds)
@@ -58,11 +50,7 @@ def test_only_params(pool, ds_spec, parser):
     **{DESC_KEY: None, PAR_KEY: None, ERR_KEY: None, EXS_KEY: None}))
 def test_only_returns(pool, ds_spec, parser):
     """ When only return tag is present, it's used. """
-    # DEBUG
-    print("POOL:\n{}\n".format(
-        "\n".join("{}: {}".format(k, v) for k, v in pool.items())))
     ds = ds_spec.render()
-    print("DS:\n{}".format(ds))
     assert_exp_line_count(ds, ds_spec)
     assert_exp_tag_count(ds, ds_spec, parser)
 
@@ -70,11 +58,7 @@ def test_only_returns(pool, ds_spec, parser):
 @pytest.mark.parametrize("pool", build_args_space(allow_empty=False,
     **{DESC_KEY: None, PAR_KEY: None, RET_KEY: None, EXS_KEY: None}))
 def test_only_raises(pool, ds_spec, parser):
-    # DEBUG
-    print("POOL:\n{}\n".format(
-        "\n".join("{}: {}".format(k, v) for k, v in pool.items())))
     ds = ds_spec.render()
-    print("DS:\n{}".format(ds))
     assert_exp_line_count(ds, ds_spec)
     assert_exp_tag_count(ds, ds_spec, parser)
     desc = parser.description(ds)
@@ -90,11 +74,7 @@ def test_only_raises(pool, ds_spec, parser):
 
 def test_specific_tag_type_omission(
     exclude_tag_type, pool, ds_spec, parser):
-    # DEBUG
-    print("POOL:\n{}\n".format(
-        "\n".join("{}: {}".format(k, v) for k, v in pool.items())))
     ds = ds_spec.render()
-    print("DS:\n{}".format(ds))
     assert_exp_line_count(ds, ds_spec)
     assert_exp_tag_count(ds, ds_spec, parser)
     assert [] == (getattr(parser, exclude_tag_type)(ds) or [])
@@ -105,15 +85,10 @@ def test_specific_tag_type_omission(
     **{RET_KEY: [{RET_KEY: [RETURN]}, {RET_KEY: [RETURN_MUTLI_LINE]}]}))
 def test_return_vs_returns(tag, pool, ds_spec):
     """ Both styles of result docstring are allowed. """
-    # DEBUG
-    print("POOL:\n{}\n".format(
-        "\n".join("{}: {}".format(k, v) for k, v in pool.items())))
     ds1 = ds_spec.render()
-    print("DS1:\n{}".format(ds1))
     parser = lucidoc.RstDocstringParser()
     ret1 = parser.returns(ds1)
     ds2 = ds1.replace(":return", tag).replace(":returns", tag)
-    print("DS2:\n{}".format(ds2))
     ret2 = parser.returns(ds2)
     assert isinstance(ret1, lucidoc.RetTag)
     assert isinstance(ret2, lucidoc.RetTag)
@@ -127,15 +102,10 @@ def test_return_vs_returns(tag, pool, ds_spec):
                  powerset([VALUE_ERROR, TYPE_ERROR], nonempty=True)]}))
 def test_raise_vs_raises(tag, pool, ds_spec):
     """ Both styles of exception docstring are allowed. """
-    # DEBUG
-    print("POOL:\n{}\n".format(
-        "\n".join("{}: {}".format(k, v) for k, v in pool.items())))
     ds1 = ds_spec.render()
-    print("DS1:\n{}".format(ds1))
     parser = lucidoc.RstDocstringParser()
     err1 = parser.raises(ds1)
     ds2 = ds1.replace(":raise", tag).replace(":raises", tag)
-    print("DS2:\n{}".format(ds2))
     err2 = parser.raises(ds2)
     assert len(err1) > 0
     assert len(err1) == len(err2)
@@ -150,10 +120,6 @@ def test_raise_vs_raises(tag, pool, ds_spec):
 def test_multiple_returns(pool, ds_spec, parser):
     """ Multiple return tags are prohibited. """
     ds = ds_spec.render()
-    # DEBUG
-    print("POOL:\n{}\n".format(
-        "\n".join("{}: {}".format(k, v) for k, v in pool.items())))
-    print("DS:\n{}".format(ds))
     with pytest.raises(lucidoc.LucidocError):
         parser._parse(ds)
 
@@ -178,14 +144,11 @@ def assert_exp_tag_count(ds, spec, parser):
         expectations for docstring
     :param lucidoc.DocstringParser: object with which to parse docstring
     """
-    # DEBUG
-    print("PARAMS: {}".format(parser.params(ds)))
     rets = parser.returns(ds)
     rets = rets or []
     if isinstance(rets, lucidoc.RetTag):
         rets = [rets]
     tags = parser.params(ds) + rets + parser.raises(ds)
-    print("TAGS:\n{}".format("\n".join(str(t) for t in tags)))
     assert len(tags) == spec.exp_tag_count, \
         "All tag texts ({}):\n{}".format(
             len(spec.all_tag_texts), "\n".join(spec.all_tag_texts))

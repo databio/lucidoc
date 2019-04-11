@@ -2,6 +2,9 @@
 
 from collections import OrderedDict
 import itertools
+import os
+import random
+import string
 import sys
 if sys.version_info < (3, 3):
     from collections import Iterable
@@ -9,6 +12,7 @@ else:
     from collections.abc import Iterable
 import pytest
 from lucidoc.docparse import RST_EXAMPLE_TAG, RstDocstringParser
+from tests.helpers import make_exports_declaration, powerset
 
 __author__ = "Vince Reuter"
 __email__ = "vreuter@virginia.edu"
@@ -50,17 +54,32 @@ CODE_EX2 = """{ex_tag}
     text += " and should parse separately from the first"
 """.format(ex_tag=RST_EXAMPLE_TAG).splitlines(False)
 
+TEMP_CLS_1 = "DummyClass"
+TEMP_CLS_2 = "Random"
+TEMP_CLS_3 = "Arbitrary"
+CLASS_NAMES = [TEMP_CLS_1, TEMP_CLS_2, TEMP_CLS_3]
 
-def powerset(items, nonempty=False):
-    """
-    Powerset of a collection, optionally excluding the empty set.
+MODLINES = """
+__author__ = "Vince Reuter"
+{exports}
 
-    :param items:
-    :param nonempty:
-    :return:
-    """
-    return [x for k in range(1 if nonempty else 0, 1 + len(items)) for x in
-            itertools.combinations(items, k)]
+class {c1}(object):
+
+    def fun1(self):
+        pass
+
+    def fun2(self):
+        pass
+
+
+class {c2}(object):
+    pass
+
+
+class {c3}(object):
+    pass
+""".format(exports=make_exports_declaration(CLASS_NAMES),
+           c1=TEMP_CLS_1, c2=TEMP_CLS_2, c3=TEMP_CLS_3).splitlines(False)
 
 
 SHORT_DESC_KEY = "headline"
@@ -166,12 +185,41 @@ def ds_spec(request):
     for pk in pks:
         if pk in request.fixturenames:
             pool = request.getfixturevalue(pk)
-            # DEBUG
-            print("POOL: {}".format(pool))
             kwargs = {k: v or None for k, v in pool.items()}
             return DocstringSpecification(**kwargs)
     raise Exception("Test case requesting docstring specification is not "
                     "parameterized by any pool key: {}".format(", ".join(pks)))
+
+
+@pytest.fixture
+def target_package(request, tmpdir):
+    """
+    Write dummy python module and return path to corresponding file.
+
+    :param pytest.fixtures.FixtureRequest request: test case requesting
+        parameterization
+    :param py.path.local.LocalPath tmpdir: temporary folder for a test case
+    :return str: path to the dummy Python module written
+    """
+    lines = request.getfixturevalue("modlines") \
+        if "modlines" in request.fixturenames else MODLINES
+    pkg = "".join(random.choice(string.ascii_lowercase) for _ in range(10))
+    pkg_dir = os.path.join(tmpdir.strpath, pkg)
+    os.makedirs(pkg_dir)
+    file_name_base = "".join(
+        random.choice(string.ascii_letters) for _ in range(15))
+    filename = file_name_base + ".py"
+    assert [] == [f for f in os.listdir(pkg_dir) if f.endswith(".pyc")]
+    with open(os.path.join(pkg_dir, filename), 'w') as f:
+        f.write("\n".join(lines))
+    exports = request.getfixturevalue("exports") \
+        if "exports" in request.fixturenames else CLASS_NAMES
+    init_lines = [
+        "from .{} import *".format(file_name_base),
+        make_exports_declaration(exports)]
+    with open(os.path.join(pkg_dir, "__init__.py"), 'w') as f:
+        f.write("\n\n".join(init_lines))
+    return pkg
 
 
 class DocstringSpecification(object):
@@ -248,8 +296,6 @@ class DocstringSpecification(object):
     @property
     def all_tag_texts(self):
         """ Collection in which each element is the lines for one tag. """
-        # DEBUG
-        print("RETURNS: {}".format(self.returns))
         return self.params + self.returns + self.raises
 
     @property

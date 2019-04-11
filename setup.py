@@ -9,26 +9,14 @@ REQDIR = "requirements"
 
 
 def read_reqs(reqs_name):
-    deps = []
     with open(os.path.join(REQDIR, "requirements-{}.txt".format(reqs_name)), 'r') as f:
-        for l in f:
-            if not l.strip():
-                continue
-            #deps.append(l.split("=")[0].rstrip("<>"))
-            deps.append(l)
-    return deps
+        return [l.strip() for l in f if l.strip()]
 
-
-# Ordinary dependencies
-DEPENDENCIES = read_reqs("all")
 
 # Additional keyword arguments for setup().
-extra = {}
-
-# 2to3
+extra = {"install_requires": read_reqs("all")}
 if sys.version_info >= (3, ):
     extra["use_2to3"] = True
-extra["install_requires"] = DEPENDENCIES
 
 
 def read_version(vers_file_path):
