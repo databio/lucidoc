@@ -225,7 +225,7 @@ def target_package(request, tmpdir):
     with open(os.path.join(pkg_dir, filename), 'w') as f:
         f.write("\n".join(lines))
     init_lines = [
-        "from {} import *".format(file_name_base),
+        "from .{} import *".format(file_name_base),
         make_exports_declaration(CLASS_NAMES)]
     with open(os.path.join(pkg_dir, "__init__.py"), 'w') as f:
         f.write("\n\n".join(init_lines))
