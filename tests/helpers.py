@@ -1,5 +1,6 @@
 """ Test suite helpers """
 
+import itertools
 import os
 import random
 import shutil
@@ -37,6 +38,18 @@ def make_exports_declaration(names):
     :return str: the export declaration specification
     """
     return "__all__ = [{}]".format(", ".join("\"{}\"".format(n) for n in names))
+
+
+def powerset(items, nonempty=False):
+    """
+    Powerset of a collection, optionally excluding the empty set.
+
+    :param Iterable[object] items: collection of objects to powerset
+    :param bool nonempty: whether to exclude the empty subset
+    :return list[object]: powerset of the given collection
+    """
+    return [x for k in range(1 if nonempty else 0, 1 + len(items)) for x in
+            itertools.combinations(items, k)]
 
 
 class SafeExec(object):

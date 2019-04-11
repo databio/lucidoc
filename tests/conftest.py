@@ -12,7 +12,7 @@ else:
     from collections.abc import Iterable
 import pytest
 from lucidoc.docparse import RST_EXAMPLE_TAG, RstDocstringParser
-from tests.helpers import make_exports_declaration
+from tests.helpers import make_exports_declaration, powerset
 
 __author__ = "Vince Reuter"
 __email__ = "vreuter@virginia.edu"
@@ -80,18 +80,6 @@ class {c3}(object):
     pass
 """.format(exports=make_exports_declaration(CLASS_NAMES),
            c1=TEMP_CLS_1, c2=TEMP_CLS_2, c3=TEMP_CLS_3).splitlines(False)
-
-
-def powerset(items, nonempty=False):
-    """
-    Powerset of a collection, optionally excluding the empty set.
-
-    :param Iterable[object] items: collection of objects to powerset
-    :param bool nonempty: whether to exclude the empty subset
-    :return list[object]: powerset of the given collection
-    """
-    return [x for k in range(1 if nonempty else 0, 1 + len(items)) for x in
-            itertools.combinations(items, k)]
 
 
 SHORT_DESC_KEY = "headline"
