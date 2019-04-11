@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- Using [`logmuse`](https://pypi.org/project/logmuse/) for logging
 ### Fixed
 - Allow Python3 to discover each class's member functions, not just properties.
 
