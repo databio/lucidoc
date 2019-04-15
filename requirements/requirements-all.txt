@@ -1,1 +1,2 @@
-logmuse
+logmuse>=0.0.2
+

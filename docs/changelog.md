@@ -1,5 +1,8 @@
 # Changelog
 
+## [0.3.1] - 2019-04-15
+- Depend on patched `logmuse`
+
 ## [0.3] - 2019-04-11
 ### Added
 - By default, print version info for documentation target and for this package in footer of each docs page; this may be omitted with `--omit-meta`.
