@@ -1,6 +1,7 @@
 site_name: Lucidoc
 site_url: http://code.databio.org/lucidoc/
 repo_url: http://github.com/databio/lucidoc
+pypi_name: lucidoc
 
 nav:
   - Introduction:
