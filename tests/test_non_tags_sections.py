@@ -3,8 +3,9 @@
 import pytest
 import lucidoc
 from lucidoc.docparse import RST_EXAMPLE_TAG
-from tests.conftest import build_args_space, powerset, CODE_EX1, CODE_EX2, DESC_KEY, \
+from tests.conftest import build_args_space, CODE_EX1, CODE_EX2, DESC_KEY, \
     EXS_KEY, HEADLINE, DETAIL_LINES, LONG_DESC_KEY, SHORT_DESC_KEY
+from ubiquerg import powerset
 
 __author__ = "Vince Reuter"
 __email__ = "vreuter@virginia.edu"

@@ -4,9 +4,11 @@ import itertools
 import os
 import random
 import string
-from lucidoc.docparse import PARSERS
-from tests.helpers import exec_test, powerset
 import pytest
+from lucidoc.docparse import PARSERS
+from tests.helpers import exec_test
+from ubiquerg import powerset
+
 
 __author__ = "Vince Reuter"
 __email__ = "vreuter@virginia.edu"

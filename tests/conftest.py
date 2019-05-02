@@ -12,11 +12,12 @@ else:
     from collections.abc import Iterable
 import pytest
 from lucidoc.docparse import RST_EXAMPLE_TAG, RstDocstringParser
-from tests.helpers import make_exports_declaration, powerset
+from tests.helpers import make_exports_declaration
+from ubiquerg import powerset
+
 
 __author__ = "Vince Reuter"
 __email__ = "vreuter@virginia.edu"
-
 
 HEADLINE = "This is a short description."
 DETAIL_LINES = ["This description provides more detail",
