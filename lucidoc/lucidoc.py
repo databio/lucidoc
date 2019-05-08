@@ -35,6 +35,7 @@ from .docparse import get_parser, RST_KEY
 from .doctags import MdTagRenderer
 from .exceptions import LucidocError
 from ._version import __version__
+from ubiquerg import expandpath
 
 module_header = "# Package {} Documentation\n"
 class_header = "## Class {}"

@@ -1,6 +1,5 @@
 """ Helper functions """
 
-import os
 import sys
 if sys.version_info < (3, 3):
     from collections import Iterable
@@ -10,17 +9,7 @@ else:
 __author__ = "Vince Reuter"
 __email__ = "vreuter@virginia.edu"
 
-__all__ = ["expandpath", "is_callable_like", "is_collection_like"]
-
-
-def expandpath(p):
-    """
-    Expand environment and user variables contained in filesystem path.
-
-    :param str p: Path in which to perform the variable expansion
-    :return str: The expansion of the input path
-    """
-    return os.path.expanduser(os.path.expandvars(p))
+__all__ = ["is_callable_like", "is_collection_like"]
 
 
 def is_callable_like(obj):
