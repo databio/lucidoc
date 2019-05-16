@@ -45,22 +45,30 @@ _LOGGER = None
 
 script_header = """<script>
 document.addEventListener('DOMContentLoaded', (event) => {
-  document.querySelectorAll('h3').forEach((block) => {
+  document.querySelectorAll('h3 code').forEach((block) => {
     hljs.highlightBlock(block);
   });
 });
 </script>
 
 <style>
-h3 { margin-left: 10px; }
-h4, table, p { margin-left: 30px; }
-li {padding: 0px;}
+h3 { 
+    padding-left: 22px;
+    text-indent: -15px;
+ }
+h3 .hljs {
+    padding-left: 20px;
+    margin-left: 0px;
+    text-indent: -15px;
+    martin-bottom: 0px;
+}
+h4, table, p, li{ margin-left: 30px; }
 h4 { 
     font-style: italic;
     font-size: 1em;
     margin-bottom: 0px;
-
 }
+
 </style>"""
 module_header = "# Package `{}` Documentation\n"
 class_header = "## Class `{}`"
