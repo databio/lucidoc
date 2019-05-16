@@ -40,6 +40,10 @@ from ubiquerg import expandpath
 module_header = "# Package {} Documentation\n"
 class_header = "## Class {}"
 function_header = "### {}"
+PAR_HEAD = "Parameters:"
+RET_HEAD = "Returns:"
+ERR_HEAD = "Raises:"
+EXS_HEAD = "Example(s):"
 
 
 __all__ = ["doc_class", "doc_callable", "doc_module", "run_lucidoc"]
@@ -301,21 +305,21 @@ def doc_class(cls, docstr_parser, render_tag, include_inherited, nested=False):
         err_tag_lines = [render_tag(t) for t in parsed_clsdoc.raises]
         block_lines = []
         if param_tag_lines:
-            block_lines.append("**Parameters:**\n")
+            block_lines.append(PAR_HEAD + "\n")
             block_lines.extend(param_tag_lines)
             block_lines.append("\n")
         if parsed_clsdoc.returns:
             raise LucidocError("Class docstring has a return value: {}".
                                format(parsed_clsdoc.returns))
         if err_tag_lines:
-            block_lines.append("**Raises:**\n")
+            block_lines.append(ERR_HEAD + "\n")
             block_lines.extend(err_tag_lines)
             block_lines.append("\n")
         if parsed_clsdoc.examples:
             if not isinstance(parsed_clsdoc.examples, list):
                 raise TypeError("Example lines are {}, not list".
                                 format(type(parsed_clsdoc.examples)))
-            block_lines.append("**Example(s):**\n")
+            block_lines.append(EXS_HEAD + "\n")
             block_lines.extend(parsed_clsdoc.examples)
             block_lines.append("\n")
         block = "\n".join(block_lines)
@@ -416,15 +420,15 @@ def doc_callable(f, docstr_parser, render_tag, name=None):
         err_tag_lines = [render_tag(t) for t in parsed.raises]
         block_lines = []
         if param_tag_lines:
-            block_lines.append("**Parameters:**\n")
+            block_lines.append(PAR_HEAD + "\n")
             block_lines.extend(param_tag_lines)
             block_lines.append("\n")
         if parsed.returns:
-            block_lines.append("**Returns:**\n")
+            block_lines.append(RET_HEAD + "\n")
             block_lines.append(render_tag(parsed.returns))
             block_lines.append("\n")
         if err_tag_lines:
-            block_lines.append("**Raises:**\n")
+            block_lines.append(ERR_HEAD + "\n")
             block_lines.extend(err_tag_lines)
             block_lines.append("\n")
         block = "\n".join(block_lines)
