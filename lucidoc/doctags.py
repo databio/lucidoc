@@ -104,9 +104,9 @@ class MdTagRenderer(TagRenderer):
         :return str: rendition of the given tag
         """
         if isinstance(t, ParTag):
-            return "- `{}` -- `{}`: {}".format(t.name, t.typename, t.description)
+            return "- `{}` (`{}`): {}".format(t.name, t.typename, t.description)
         elif isinstance(t, RetTag):
-            return "`{}`: {}".format(t.typename, t.description)
+            return "- `{}`: {}".format(t.typename, t.description)
         elif isinstance(t, ErrTag):
             return "- `{}`: {}".format(t.typename, t.description)
         else:

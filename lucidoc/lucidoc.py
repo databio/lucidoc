@@ -48,7 +48,7 @@ function_header = "### {}"
 
 
 def _fmt_fun_section(name):
-    return "#### " + name
+    return "*{}*".format(name)
 
 
 def _func_sect_head(name, fmt=_fmt_fun_section, suffix=":", newline=True):
