@@ -443,13 +443,14 @@ def doc_callable(f, docstr_parser, render_tag, name=None):
 
     _LOGGER.info("Processing function: {}".format(n))
 
-    head = function_header.format(n.replace('_', '\\_'))
+    #head = function_header.format(n.replace('_', '\\_'))
 
     signature = "```python\ndef {}{}\n```\n".format(
         n, "(self)" if isinstance(f, property) else
             pydoc.inspect.formatargspec(*args_spec(f)))
 
-    res = [head]
+    #res = [head]
+    res = [signature]
     ds = pydoc.inspect.getdoc(f)
     if ds:
         parsed = docstr_parser(ds)
@@ -469,9 +470,10 @@ def doc_callable(f, docstr_parser, render_tag, name=None):
             block_lines.extend(err_tag_lines)
             block_lines.append("\n")
         block = "\n".join(block_lines)
-        res.extend([docstr_parser.description(ds), signature, block])
-    else:
-        res.append(signature)
+        #res.extend([docstr_parser.description(ds), signature, block])
+        res.extend([docstr_parser.description(ds), block])
+    #else:
+    #    res.append(signature)
     res.append("\n")
     return res
 

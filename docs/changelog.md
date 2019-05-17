@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+### Changed
+- Improved object signature renditions in API docs.
+- Improved overall styling of API docs.
+
 ## [0.3.1] - 2019-04-15
 - Depend on patched `logmuse`
 
