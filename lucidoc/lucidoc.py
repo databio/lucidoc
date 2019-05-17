@@ -42,13 +42,41 @@ __all__ = ["doc_class", "doc_callable", "doc_module", "run_lucidoc"]
 
 _LOGGER = None
 
-module_header = "# Package {} Documentation\n"
-class_header = "## Class {}"
-function_header = "### {}"
+
+script_header = """<script>
+document.addEventListener('DOMContentLoaded', (event) => {
+  document.querySelectorAll('h3 code').forEach((block) => {
+    hljs.highlightBlock(block);
+  });
+});
+</script>
+
+<style>
+h3 { 
+    padding-left: 22px;
+    text-indent: -15px;
+ }
+h3 .hljs {
+    padding-left: 20px;
+    margin-left: 0px;
+    text-indent: -15px;
+    martin-bottom: 0px;
+}
+h4, table, p, li{ margin-left: 30px; }
+h4 { 
+    font-style: italic;
+    font-size: 1em;
+    margin-bottom: 0px;
+}
+
+</style>"""
+module_header = "# Package `{}` Documentation\n"
+class_header = "## Class `{}`"
+function_header = "### `{}`"
 
 
 def _fmt_fun_section(name):
-    return "*{}*".format(name)
+    return "#### {}".format(name)
 
 
 def _func_sect_head(name, fmt=_fmt_fun_section, suffix=":", newline=True):
@@ -218,7 +246,7 @@ def doc_module(mod, docstr_parser, render_tag,
             len(missing_targets), ", ".join(missing_targets)))
 
     # Header and module docstring
-    output = [module_header.format(mod.__name__)]
+    output = [script_header, module_header.format(mod.__name__)]
     if mod.__doc__ and not no_mod_docstr:
         output.append(mod.__doc__)
 
