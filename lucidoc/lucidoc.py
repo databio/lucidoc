@@ -245,7 +245,13 @@ def doc_module(mod, docstr_parser, render_tag,
     used_objs = {}
     final_targets = {}
     for name, obj in all_targets.items():
-        if obj not in used_objs:
+        try:
+            seen = obj in used_objs
+        except TypeError as e:
+            print("Could not determine whether object for '{}' is repeated; "
+                  "skipping ({})".format(name, str(e)))
+            continue
+        if not seen:
             final_targets[name] = obj
             used_objs[obj] = name
         else:
