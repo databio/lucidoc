@@ -1,9 +1,15 @@
 # Changelog
 
 ## [Unreleased]
+### Added
+- `__aliases__` (mapping from name to list of names) as hook for package to declare what exports are equivalent, and therefore which to use just one of in the documentation.
+- Anchor tags to class headers
 ### Changed
 - Improved object signature renditions in API docs.
 - Improved overall styling of API docs.
+### Fixed
+- Take measures to ensure objects are repeatedly documented if aliased for export, even 
+if the documented package doesn't declare `__aliases__`
 
 ## [0.3.1] - 2019-04-15
 - Depend on patched `logmuse`

@@ -239,12 +239,24 @@ def doc_module(mod, docstr_parser, render_tag,
     if repeated:
         raise LucidocError("Repeat target names:\n{}".format(
             "\n".join("{}: {}".format(n, ts) for n, ts in repeated)))
+    if "__aliases__" in dir(mod):
+        all_targets = {k: v for k, v in all_targets.items() if k not in
+                       set(itertools.chain(*mod.__aliases__.values()))}
+    used_objs = {}
+    final_targets = {}
+    for name, obj in all_targets.items():
+        if obj not in used_objs:
+            final_targets[name] = obj
+            used_objs[obj] = name
+        else:
+            print("Object for {} is already bound to {} and will be documented "
+                  "as such".format(name, used_objs[obj]))
 
     missing_targets = declared - set(all_targets.keys())
     if missing_targets:
         _LOGGER.warning("{} target(s) missing: {}".format(
             len(missing_targets), ", ".join(missing_targets)))
-    print("All targets: {}".format(", ".join(sorted(all_targets.keys()))))
+    print("Final targets: {}".format(", ".join(sorted(final_targets.keys()))))
 
     # Header and module docstring
     output = [script_header, module_header.format(mod.__name__)]
@@ -288,7 +300,7 @@ def doc_module(mod, docstr_parser, render_tag,
                     f = get_target_fun(t)
                     f and res.append((n, t, f))
             return res
-        chunk_groups = {g: [(n, all_targets[n]) for n in ns] for g, ns in groups}
+        chunk_groups = {g: [(n, final_targets[n]) for n in ns] for g, ns in groups}
         grouped_results = {g: build_doc_block(nt_pairs, prepare_targets)
                            for g, nt_pairs in chunk_groups.items()}
         return {g: postproc(head=output, blocks=chunks)
@@ -304,7 +316,7 @@ def doc_module(mod, docstr_parser, render_tag,
                         classes.append((n, t))
             return [(n, t, doc_cls) for n, t in classes] + \
                    [(n, t, doc_fun) for n, t in functions]
-        chunks = build_doc_block(all_targets.items(), prepare_targets)
+        chunks = build_doc_block(final_targets.items(), prepare_targets)
         return postproc(head=output, blocks=chunks)
 
 
