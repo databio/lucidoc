@@ -71,8 +71,8 @@ h4 {
 
 </style>"""
 module_header = "# Package `{}` Documentation\n"
-class_header = "## Class `{}`"
-function_header = "### `{}`"
+class_header = "## <a name=\"{name}\"></a> Class `{name}`"
+#function_header = "### <a name=\"{name}\"></a> `{name}`"
 
 
 def _fmt_fun_section(name):
@@ -244,6 +244,7 @@ def doc_module(mod, docstr_parser, render_tag,
     if missing_targets:
         _LOGGER.warning("{} target(s) missing: {}".format(
             len(missing_targets), ", ".join(missing_targets)))
+    print("All targets: {}".format(", ".join(sorted(all_targets.keys()))))
 
     # Header and module docstring
     output = [script_header, module_header.format(mod.__name__)]
@@ -330,7 +331,7 @@ def doc_class(cls, docstr_parser, render_tag, include_inherited, nested=False):
 
     _LOGGER.info("Processing class: {}".format(cls.__name__))
 
-    head = class_header.format(cls.__name__)
+    head = class_header.format(name=cls.__name__)
     if nested:
         head = "#" + head
     cls_doc = [head]
