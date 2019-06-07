@@ -1,1 +1,2 @@
 pytest>=3.0.7
+ubiquerg>=0.0.3
