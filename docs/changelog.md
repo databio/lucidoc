@@ -1,8 +1,11 @@
 # Changelog
 
-## [0.4.1] -- 2019-07-10
+## [0.4.1] -- 2019-12-11
 ### Fixed
 - Problem with lucidoc styles leaking to surrounding areas. Now requires lucidoc to be in a 'content' div.
+
+### Changed
+- Create docs for `__init__` method
 
 ## [0.4.0] -- 2019-06-06
 ### Added
