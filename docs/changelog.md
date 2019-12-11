@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1] -- 2019-12-11
+### Fixed
+- Problem with lucidoc styles leaking to surrounding areas. Now requires lucidoc to be in a 'content' div.
+
+### Changed
+- Create docs for `__init__` method
+
 ## [0.4.0] -- 2019-06-06
 ### Added
 - `__aliases__` (mapping from name to list of names) as hook for package to declare what exports are equivalent, and therefore which to use just one of in the documentation.

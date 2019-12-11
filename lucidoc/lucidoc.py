@@ -79,6 +79,7 @@ lucidoc_footer = """
 
 """
 
+
 def _fmt_fun_section(name):
     return "#### {}".format(name)
 
@@ -605,8 +606,8 @@ def _type_err_message(exp_type, obs_value):
 
 
 def _unprotected(name):
-    """ Determine whether object name suggests its not protected. """
-    return not name.startswith("_")
+    """ Determine whether object name suggests its not protected, but include init """
+    return name == "__init__" or not name.startswith("_")
 
 
 def _write_docs(fp, doc):
