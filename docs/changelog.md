@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.3] -- Unreleased
+### Changed
+- Add `__repr__` for tags to make error messages more informative.
+
 ## [0.4.2] -- 2019-12-11
 ### Changed
 - Create docs for `__init__` method
