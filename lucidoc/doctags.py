@@ -38,6 +38,10 @@ class DocTag(object):
         return "{cn}({tn}: {d})".format(
             cn=self.__class__.__name__, tn=self.typename, d=self.description)
 
+    def __repr__(self):
+        return "{cn}({tn}: {d})".format(
+            cn=self.__class__.__name__, tn=self.typename, d=self.description)
+
 
 class ParTag(DocTag):
     """ Representation of a parameter tag in docstring """
