@@ -1,8 +1,10 @@
 # Changelog
 
-## [0.4.3] -- Unreleased
+## [0.4.3] -- 2021-09-08
 ### Changed
 - Add `__repr__` for tags to make error messages more informative.
+- Remove Python 2 compatibility use for mkdocs compatibility
+
 
 ## [0.4.2] -- 2019-12-11
 ### Changed
