@@ -22,11 +22,9 @@ def read_version(vers_file_path):
 
 
 # Handle the pypi README formatting.
-try:
-    import pypandoc
-    long_description = pypandoc.convert_file('README.md', 'rst')
-except(IOError, ImportError, OSError, RuntimeError):
-    long_description = open('README.md').read()
+
+with open('README.md') as f:
+    long_description = f.read()
 
 setup(
     name=PACKAGE,
