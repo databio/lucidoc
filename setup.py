@@ -22,7 +22,6 @@ def read_version(vers_file_path):
 
 
 # Handle the pypi README formatting.
-
 with open('README.md') as f:
     long_description = f.read()
 
