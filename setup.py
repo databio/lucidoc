@@ -15,9 +15,6 @@ def read_reqs(reqs_name):
 
 # Additional keyword arguments for setup().
 extra = {"install_requires": read_reqs("all")}
-if sys.version_info >= (3, ):
-    extra["use_2to3"] = True
-
 
 def read_version(vers_file_path):
     with open(vers_file_path, 'r') as f:
