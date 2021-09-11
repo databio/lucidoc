@@ -4,35 +4,13 @@ import itertools
 import os
 import pytest
 from lucidoc.docparse import PARSERS
-from tests.conftest import CLASS_NAMES, TEMP_CLS_1, TEMP_CLS_2, \
-    TEMP_CLS_3
+from tests.conftest import CLASS_NAMES, MODLINES
 from tests.helpers import exec_test, make_exports_declaration
 
 __author__ = "Vince Reuter"
-__email__ = "vreuter@virginia.edu"
 
 
 EXPORTS_KEY = "exports"
-
-MODLINES = """
-__author__ = "Vince Reuter"
-
-class {c1}(object):
-
-    def fun1(self):
-        pass
-
-    def fun2(self):
-        pass
-
-
-class {c2}(object):
-    pass
-
-
-class {c3}(object):
-    pass
-""".format(c1=TEMP_CLS_1, c2=TEMP_CLS_2, c3=TEMP_CLS_3).splitlines(False)
 
 
 def pytest_generate_tests(metafunc):
