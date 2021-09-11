@@ -3,20 +3,17 @@
 import pytest
 import lucidoc
 from lucidoc.docparse import RST_EXAMPLE_TAG
-from tests.conftest import build_args_space, CODE_EX1, CODE_EX2, DESC_KEY, \
+from tests.conftest import build_args_space, CODE_EX1, DESC_KEY, \
     EXS_KEY, HEADLINE, DETAIL_LINES, LONG_DESC_KEY, SHORT_DESC_KEY
 from ubiquerg import powerset
 
 __author__ = "Vince Reuter"
-__email__ = "vreuter@virginia.edu"
 
 
 @pytest.mark.parametrize("blank_line_sep", [False, True])
 @pytest.mark.parametrize("pool", build_args_space(
     allow_empty=False,
-    **{EXS_KEY: [{EXS_KEY: items} for items in
-                 powerset([CODE_EX1, CODE_EX2], nonempty=True)]}
-))
+    **{EXS_KEY: [{EXS_KEY: items} for items in powerset([CODE_EX1], nonempty=True)]}))
 def test_examples(pool, ds_spec, blank_line_sep):
     """ Check that number of example blocks parsed is as expected. """
     parser = lucidoc.RstDocstringParser()

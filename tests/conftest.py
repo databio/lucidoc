@@ -17,7 +17,7 @@ from ubiquerg import powerset
 
 
 __author__ = "Vince Reuter"
-__email__ = "vreuter@virginia.edu"
+
 
 HEADLINE = "This is a short description."
 DETAIL_LINES = ["This description provides more detail",
@@ -47,18 +47,9 @@ CODE_EX1 = """{ex_tag}
     c = 3
 """.format(ex_tag=RST_EXAMPLE_TAG).splitlines(False)
 
-CODE_EX2 = """{ex_tag}
-
-.. code-block:: python
-
-    text = "this is the second example"
-    text += " and should parse separately from the first"
-""".format(ex_tag=RST_EXAMPLE_TAG).splitlines(False)
-
 TEMP_CLS_1 = "DummyClass"
 TEMP_CLS_2 = "Random"
-TEMP_CLS_3 = "Arbitrary"
-CLASS_NAMES = [TEMP_CLS_1, TEMP_CLS_2, TEMP_CLS_3]
+CLASS_NAMES = [TEMP_CLS_1, TEMP_CLS_2]
 
 MODLINES = """
 __author__ = "Vince Reuter"
@@ -75,12 +66,7 @@ class {c1}(object):
 
 class {c2}(object):
     pass
-
-
-class {c3}(object):
-    pass
-""".format(exports=make_exports_declaration(CLASS_NAMES),
-           c1=TEMP_CLS_1, c2=TEMP_CLS_2, c3=TEMP_CLS_3).splitlines(False)
+""".format(exports=make_exports_declaration(CLASS_NAMES), c1=TEMP_CLS_1, c2=TEMP_CLS_2).splitlines(False)
 
 
 SHORT_DESC_KEY = "headline"
@@ -99,7 +85,7 @@ PARAM_POOL = [{PAR_KEY: items} for items in
               powerset([BOOL_PARAM, FUNC_PARAM, ITER_PARAM, UNION_PARAM])]
 RETURN_POOL = [{RET_KEY: items} for items in [RETURN, RETURN_MUTLI_LINE]]
 ERROR_POOL = [{ERR_KEY: items} for items in powerset([VALUE_ERROR, TYPE_ERROR])]
-CODE_POOL = [{EXS_KEY: items} for items in powerset([CODE_EX1, CODE_EX2])]
+CODE_POOL = [{EXS_KEY: items} for items in powerset([CODE_EX1])]
 SPACE_POOL = [dict(zip(
     ("pre_tags_space", "trailing_space"), flags))
     for flags in itertools.product([False, True], [False, True])
