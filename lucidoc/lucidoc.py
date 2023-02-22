@@ -10,7 +10,7 @@ API documentation for the package.
 """
 
 import argparse
-from collections import defaultdict, Iterable
+from collections import defaultdict
 from functools import partial
 import inspect
 import itertools
@@ -25,8 +25,10 @@ else:
 
 if sys.version_info < (3, 3):
     from collections import Mapping
+    from collections import Iterable
 else:
     from collections.abc import Mapping
+    from collections.abc import Iterable
 
 from logmuse import setup_logger
 
