@@ -26,7 +26,7 @@ def exec_test(folder, pkg, parse_style, **kwargs):
     outfile = os.path.join(folder, fn)
     with TmpTestCtx(folder):
         run_lucidoc(pkg, parse_style, outfile=outfile, **kwargs)
-    with open(outfile, 'r') as f:
+    with open(outfile, "r") as f:
         return f.read()
 
 
@@ -37,11 +37,12 @@ def make_exports_declaration(names):
     :param Iterable[str] names: names that should be declared as exports
     :return str: the export declaration specification
     """
-    return "__all__ = [{}]".format(", ".join("\"{}\"".format(n) for n in names))
+    return "__all__ = [{}]".format(", ".join('"{}"'.format(n) for n in names))
 
 
 class SafeExec(object):
-    """ Run something that could erroneously write output; clean it if so. """
+    """Run something that could erroneously write output; clean it if so."""
+
     def __init__(self):
         self.folder = os.getcwd()
         self.original_contents = set(os.listdir(self.folder))
@@ -59,7 +60,7 @@ class SafeExec(object):
 
 
 class TmpTestCtx(object):
-    """ Temporarily alter the state of sys.path. """
+    """Temporarily alter the state of sys.path."""
 
     def __init__(self, p):
         self.p = p

@@ -1,6 +1,7 @@
 """ Helper functions """
 
 import sys
+
 if sys.version_info < (3, 3):
     from collections import Iterable
 else:

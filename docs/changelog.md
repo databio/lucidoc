@@ -1,10 +1,14 @@
 # Changelog
 
+## [0.4.4] -- 2023-02-22
+### Changed
+- Fixed compatibility with Python 3.10
+- Simplified unit testing
+
 ## [0.4.3] -- 2021-09-08
 ### Changed
 - Add `__repr__` for tags to make error messages more informative.
 - Remove Python 2 compatibility use for mkdocs compatibility
-
 
 ## [0.4.2] -- 2019-12-11
 ### Changed

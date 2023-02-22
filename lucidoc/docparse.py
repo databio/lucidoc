@@ -6,6 +6,7 @@ from collections import namedtuple
 from itertools import dropwhile, takewhile, tee
 import os
 import sys
+
 if sys.version_info < (3, 0):
     from itertools import ifilterfalse as filterfalse
 else:
@@ -17,20 +18,24 @@ from .exceptions import LucidocError
 __author__ = "Vince Reuter"
 __email__ = "vreuter@virginia.edu"
 
-__all__ = ["DocstringParser", "ParsedDocstringResult",
-           "RstDocstringParser", "get_parser"]
+__all__ = [
+    "DocstringParser",
+    "ParsedDocstringResult",
+    "RstDocstringParser",
+    "get_parser",
+]
 
 
 RST_EXAMPLE_TAG = ":Example:"
 
 
 ParsedDocstringResult = namedtuple(
-    "ParsedDocstringResult",
-    ["doc", "desc", "params", "returns", "raises", "examples"])
+    "ParsedDocstringResult", ["doc", "desc", "params", "returns", "raises", "examples"]
+)
 
 
 class DocstringParser(object):
-    """ Entity responsible for parsing docstrings """
+    """Entity responsible for parsing docstrings"""
 
     __metaclass__ = abc.ABCMeta
 
@@ -90,10 +95,10 @@ class DocstringParser(object):
 
 
 class RstDocstringParser(DocstringParser):
-    """ Parser for ReStructured text docstrings. """
+    """Parser for ReStructured text docstrings."""
 
     def __init__(self):
-        """ Set the most recently seen docstring parse result to null. """
+        """Set the most recently seen docstring parse result to null."""
         super(RstDocstringParser, self).__init__()
         self._last_seen = None
 
@@ -122,9 +127,12 @@ class RstDocstringParser(DocstringParser):
         return self._fetchparse(ds, "examples")
 
     def _fetchparse(self, ds, name):
-        """ Return cached result if available, else parse then cache. """
-        return getattr(self._last_seen, name) if self._cached(ds) else \
-            self._parse(ds, name)
+        """Return cached result if available, else parse then cache."""
+        return (
+            getattr(self._last_seen, name)
+            if self._cached(ds)
+            else self._parse(ds, name)
+        )
 
     @staticmethod
     def _is_blank(l):
@@ -134,7 +142,7 @@ class RstDocstringParser(DocstringParser):
         return self._last_seen is not None and self._last_seen.doc == ds
 
     def _get_tag(self, chunk):
-        """ Create the tag associated with a chunk of docstring lines. """
+        """Create the tag associated with a chunk of docstring lines."""
         try:
             decl_line = chunk[0]
         except IndexError:
@@ -147,16 +155,16 @@ class RstDocstringParser(DocstringParser):
 
     @staticmethod
     def _is_tag_start(l):
-        """ Determine whether line seems to start a tag declaration. """
+        """Determine whether line seems to start a tag declaration."""
         return l.startswith(":") and not l.startswith(RST_EXAMPLE_TAG)
 
     @staticmethod
     def _past_desc(l):
-        """ Determine whether a line looks to be past docstring description. """
+        """Determine whether a line looks to be past docstring description."""
         return l.startswith(":")
 
     def _parse(self, ds, name=None):
-        """ Parse the description, examples, and tags from a docstring. """
+        """Parse the description, examples, and tags from a docstring."""
         lines = ds.split(os.linesep)
 
         def seek_past_head(ls):
@@ -169,17 +177,20 @@ class RstDocstringParser(DocstringParser):
                 return h, len(ls)
 
         head, non_head_index = seek_past_head(lines)
-        #if not head:
+        # if not head:
         #    raise LucidocError("Empty docstring")
         head = " ".join(l.strip() for l in head)
 
         ls1, ls2 = tee(lines[non_head_index:])
-        detail_lines = list(filterfalse(
-            self._is_blank, takewhile(lambda l: not self._past_desc(l), ls1)))
+        detail_lines = list(
+            filterfalse(
+                self._is_blank, takewhile(lambda l: not self._past_desc(l), ls1)
+            )
+        )
 
         desc = head
         if detail_lines:
-            desc += (("\n\n" if desc else "") + "\n".join(detail_lines))
+            desc += ("\n\n" if desc else "") + "\n".join(detail_lines)
         post_desc = list(dropwhile(lambda l: not self._past_desc(l), ls2))
 
         raw_tag_blocks = []
@@ -203,8 +214,8 @@ class RstDocstringParser(DocstringParser):
             first_non_tag_index = 0
 
         examples = self._parse_example_lines(
-            [] if first_non_tag_index is None
-            else post_desc[first_non_tag_index:])
+            [] if first_non_tag_index is None else post_desc[first_non_tag_index:]
+        )
 
         tags = [self._get_tag(chunk) for chunk in raw_tag_blocks]
 
@@ -220,8 +231,7 @@ class RstDocstringParser(DocstringParser):
                 raise TypeError("Unrecognized doc tag type: {}".format(type(t)))
 
         if len(ret) > 1:
-            raise LucidocError("Multiple ({}) returns tags: {}".
-                              format(len(ret), ret))
+            raise LucidocError("Multiple ({}) returns tags: {}".format(len(ret), ret))
         ret = ret[0] if ret else None
 
         self._last_seen = ParsedDocstringResult(ds, desc, par, ret, err, examples)
@@ -230,7 +240,7 @@ class RstDocstringParser(DocstringParser):
 
     @staticmethod
     def _parse_tag_start(line):
-        """ Parse first of a chunk of lines associated with a docstring tag. """
+        """Parse first of a chunk of lines associated with a docstring tag."""
         if line.startswith(":param"):
             tt = ParTag
         elif line.startswith(":returns") or line.startswith(":return"):
@@ -304,8 +314,11 @@ class RstDocstringParser(DocstringParser):
             if curr:
                 acc = add_curr(code_type, curr)
             t, curr = burn_blanks(t), []
-            code_type = h.lstrip(tag_code_block).strip() \
-                    if h.startswith(tag_code_block) else None
+            code_type = (
+                h.lstrip(tag_code_block).strip()
+                if h.startswith(tag_code_block)
+                else None
+            )
         else:
             curr = curr + [h]
         return self._create_code_blocks(t, code_type, curr, acc)
@@ -316,7 +329,7 @@ PARSERS = {RST_KEY: RstDocstringParser()}
 
 
 class UnknownParserError(LucidocError):
-    """ Exception for request of unsupported parsing strategy. """
+    """Exception for request of unsupported parsing strategy."""
 
     def __init__(self, name):
         msg = "{}; choose one: {}".format(name, ", ".join(PARSERS.keys()))

@@ -9,7 +9,8 @@ __all__ = ["DocTag", "ErrTag", "ParTag", "RetTag", "TagRenderer", "MdTagRenderer
 
 
 class DocTag(object):
-    """ Representation of a tag within a docstring """
+    """Representation of a tag within a docstring"""
+
     __metaclass__ = abc.ABCMeta
 
     def __init__(self, typename, description):
@@ -36,15 +37,17 @@ class DocTag(object):
 
     def __str__(self):
         return "{cn}({tn}: {d})".format(
-            cn=self.__class__.__name__, tn=self.typename, d=self.description)
+            cn=self.__class__.__name__, tn=self.typename, d=self.description
+        )
 
     def __repr__(self):
         return "{cn}({tn}: {d})".format(
-            cn=self.__class__.__name__, tn=self.typename, d=self.description)
+            cn=self.__class__.__name__, tn=self.typename, d=self.description
+        )
 
 
 class ParTag(DocTag):
-    """ Representation of a parameter tag in docstring """
+    """Representation of a parameter tag in docstring"""
 
     def __init__(self, name, typename, description):
         """
@@ -68,22 +71,28 @@ class ParTag(DocTag):
 
     def __str__(self):
         return "{cn}({tn} {n}: {d})".format(
-            cn=self.__class__.__name__, tn=self.typename, n=self.name,
-            d=self.description)
+            cn=self.__class__.__name__,
+            tn=self.typename,
+            n=self.name,
+            d=self.description,
+        )
 
 
 class RetTag(DocTag):
-    """ Tag for type and description of return value """
+    """Tag for type and description of return value"""
+
     pass
 
 
 class ErrTag(DocTag):
-    """ Tag for type and description of a potential Exception """
+    """Tag for type and description of a potential Exception"""
+
     pass
 
 
 class TagRenderer(object):
-    """ Strategy for rendering a tag. """
+    """Strategy for rendering a tag."""
+
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
@@ -98,7 +107,7 @@ class TagRenderer(object):
 
 
 class MdTagRenderer(TagRenderer):
-    """ Render tag for Markdown """
+    """Render tag for Markdown"""
 
     def __call__(self, t, *args, **kwargs):
         """

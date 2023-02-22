@@ -10,7 +10,7 @@ API documentation for the package.
 """
 
 import argparse
-from collections import defaultdict, Iterable
+from collections import defaultdict
 from functools import partial
 import inspect
 import itertools
@@ -25,8 +25,10 @@ else:
 
 if sys.version_info < (3, 3):
     from collections import Mapping
+    from collections import Iterable
 else:
     from collections.abc import Mapping
+    from collections.abc import Iterable
 
 from logmuse import setup_logger
 
@@ -73,8 +75,8 @@ h4 .content {
 
 """
 module_header = "# Package `{}` Documentation\n"
-class_header = "## <a name=\"{name}\"></a> Class `{name}`"
-#function_header = "### <a name=\"{name}\"></a> `{name}`"
+class_header = '## <a name="{name}"></a> Class `{name}`'
+# function_header = "### <a name=\"{name}\"></a> `{name}`"
 lucidoc_footer = """
 
 """
@@ -96,79 +98,105 @@ exs_header = partial(_func_sect_head, "Examples")
 
 class _VersionInHelpParser(argparse.ArgumentParser):
     def format_help(self):
-        """ Add version information to help text. """
-        return "version: {}\n".format(__version__) + \
-               super(_VersionInHelpParser, self).format_help()
+        """Add version information to help text."""
+        return (
+            "version: {}\n".format(__version__)
+            + super(_VersionInHelpParser, self).format_help()
+        )
 
 
 def _parse_args(cmdl):
-
     parser = _VersionInHelpParser(
         description="Generate Markdown documentation for a module",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
 
     parser.add_argument(
-        "-V", "--version",
+        "-V",
+        "--version",
         action="version",
-        version="%(prog)s {v}".format(v=__version__))
+        version="%(prog)s {v}".format(v=__version__),
+    )
 
     # Required
     parser.add_argument(
         "pkgpath",
         help="Name/dotted path to package to document, i.e. what you'd type as "
-             "the target for an import statement")
+        "the target for an import statement",
+    )
     parser.add_argument(
-        "-P", "--parse", choices=[RST_KEY], required=True,
-        help="Name of parsing strategy for docstrings")
+        "-P",
+        "--parse",
+        choices=[RST_KEY],
+        required=True,
+        help="Name of parsing strategy for docstrings",
+    )
 
     # Optional
     parser.add_argument(
-        "--inherited", action="store_true",
-        help="Include inherited members")
+        "--inherited", action="store_true", help="Include inherited members"
+    )
     parser.add_argument(
-        "--omit-meta", action="store_true",
+        "--omit-meta",
+        action="store_true",
         help="Omit from the documentation footer the version metadata for "
-             "documentation target and for this package")
+        "documentation target and for this package",
+    )
     parser.add_argument(
-        "--skip-module-docstring", action="store_true",
-        help="Indicate that module docstring should be omitted")
+        "--skip-module-docstring",
+        action="store_true",
+        help="Indicate that module docstring should be omitted",
+    )
 
     selection = parser.add_mutually_exclusive_group()
     selection.add_argument(
         "--whitelist",
         help="Comma-separated list of names of objects to include in "
-             "documentation; this is mutually exclusive with --output-groups "
-             "and --blacklist")
+        "documentation; this is mutually exclusive with --output-groups "
+        "and --blacklist",
+    )
     selection.add_argument(
         "--blacklist",
         help="Comma-separated list of names of objects to exclude from "
-             "documentation; this is mutually exclusive with --output-groups "
-             "and --whitelist")
+        "documentation; this is mutually exclusive with --output-groups "
+        "and --whitelist",
+    )
     selection.add_argument(
-        "--output-groups", nargs='*',
+        "--output-groups",
+        nargs="*",
         help="Space-separated list of groups of objects to document together; "
-             "if used, this should be specified as: "
-             "--output-groups g1=obj1,obj2,... g2=objA,objB,..., ...; "
-             "i.e., spaces between groups and comma between group members; "
-             "note mutual exclusivity with --whitelist and --blacklist")
+        "if used, this should be specified as: "
+        "--output-groups g1=obj1,obj2,... g2=objA,objB,..., ...; "
+        "i.e., spaces between groups and comma between group members; "
+        "note mutual exclusivity with --whitelist and --blacklist",
+    )
 
     output = parser.add_mutually_exclusive_group()
     output.add_argument(
         "--outfile",
         help="Path to file to which to write output; this is mutually exclusive "
-             "with --outfolder")
+        "with --outfolder",
+    )
     output.add_argument(
         "--outfolder",
         help="Path to folder in which to place output files; this can only be "
-             "used with --output-groups, and it's mutually exclusive with "
-             "--outfile")
+        "used with --output-groups, and it's mutually exclusive with "
+        "--outfile",
+    )
 
     return parser.parse_args(cmdl)
 
 
-def doc_module(mod, docstr_parser, render_tag,
-               no_mod_docstr=False, include_inherited=False,
-               retain=None, groups=None, omit_meta=False):
+def doc_module(
+    mod,
+    docstr_parser,
+    render_tag,
+    no_mod_docstr=False,
+    include_inherited=False,
+    retain=None,
+    groups=None,
+    omit_meta=False,
+):
     """
     Get large block of Markdown-formatted documentation of a module
 
@@ -196,10 +224,13 @@ def doc_module(mod, docstr_parser, render_tag,
         raise TypeError("Object retention function must be callable")
 
     # Parameterize the object nature-specific documentation functions.
-    doc_cls = partial(doc_class, docstr_parser=docstr_parser,
-                      render_tag=render_tag, include_inherited=include_inherited)
-    doc_fun = partial(doc_callable, docstr_parser=docstr_parser,
-                      render_tag=render_tag)
+    doc_cls = partial(
+        doc_class,
+        docstr_parser=docstr_parser,
+        render_tag=render_tag,
+        include_inherited=include_inherited,
+    )
+    doc_fun = partial(doc_callable, docstr_parser=docstr_parser, render_tag=render_tag)
 
     if groups:
         if isinstance(groups, Mapping):
@@ -210,17 +241,20 @@ def doc_module(mod, docstr_parser, render_tag,
         except ValueError:
             _LOGGER.error(
                 "Failed to parse target names from groups declaration; ensure "
-                "that groups are specified as a mapping or as a collection of pairs.")
+                "that groups are specified as a mapping or as a collection of pairs."
+            )
             raise
         if retain:
             _LOGGER.debug(
                 "Groups provided; only declared group members will be used "
-                "in documentation")
+                "in documentation"
+            )
             use_obj = lambda name: retain(name) and name in declared
         else:
             use_obj = lambda name: name in declared
     else:
         declared = set()
+
         def use_obj(o):
             return retain(o) if retain else True
 
@@ -242,31 +276,44 @@ def doc_module(mod, docstr_parser, render_tag,
 
     all_targets, repeated = collect_targets_by_name()
     if repeated:
-        raise LucidocError("Repeat target names:\n{}".format(
-            "\n".join("{}: {}".format(n, ts) for n, ts in repeated)))
+        raise LucidocError(
+            "Repeat target names:\n{}".format(
+                "\n".join("{}: {}".format(n, ts) for n, ts in repeated)
+            )
+        )
     if "__aliases__" in dir(mod):
-        all_targets = {k: v for k, v in all_targets.items() if k not in
-                       set(itertools.chain(*mod.__aliases__.values()))}
+        all_targets = {
+            k: v
+            for k, v in all_targets.items()
+            if k not in set(itertools.chain(*mod.__aliases__.values()))
+        }
     used_objs = {}
     final_targets = {}
     for name, obj in all_targets.items():
         try:
             seen = obj in used_objs
         except TypeError as e:
-            print("Could not determine whether object for '{}' is repeated; "
-                  "skipping ({})".format(name, str(e)))
+            print(
+                "Could not determine whether object for '{}' is repeated; "
+                "skipping ({})".format(name, str(e))
+            )
             continue
         if not seen:
             final_targets[name] = obj
             used_objs[obj] = name
         else:
-            print("Object for {} is already bound to {} and will be documented "
-                  "as such".format(name, used_objs[obj]))
+            print(
+                "Object for {} is already bound to {} and will be documented "
+                "as such".format(name, used_objs[obj])
+            )
 
     missing_targets = declared - set(all_targets.keys())
     if missing_targets:
-        _LOGGER.warning("{} target(s) missing: {}".format(
-            len(missing_targets), ", ".join(missing_targets)))
+        _LOGGER.warning(
+            "{} target(s) missing: {}".format(
+                len(missing_targets), ", ".join(missing_targets)
+            )
+        )
     print("Final targets: {}".format(", ".join(sorted(final_targets.keys()))))
 
     # Header and module docstring
@@ -275,8 +322,7 @@ def doc_module(mod, docstr_parser, render_tag,
         output.append(mod.__doc__)
 
     def build_doc_block(nt_pairs, prep):
-        return list(itertools.chain(*[
-            f(t) for _, t, f in prep(nt_pairs)]))
+        return list(itertools.chain(*[f(t) for _, t, f in prep(nt_pairs)]))
 
     def get_target_fun(t):
         if inspect.isfunction(t):
@@ -289,8 +335,10 @@ def doc_module(mod, docstr_parser, render_tag,
         return "\n".join(map(str, head + blocks))
 
     if omit_meta:
+
         def postproc(head, blocks):
             return basic_finish(head, blocks) + lucidoc_footer
+
     else:
         try:
             v = mod.__version__
@@ -298,12 +346,15 @@ def doc_module(mod, docstr_parser, render_tag,
             _LOGGER.warning("No version info available: {}".format(mod.__name__))
             footer = ""
         else:
-            footer = "\n\n*Version Information: `{}` v{}, generated by `lucidoc` v{}*".\
-                format(mod.__name__, v, __version__)
+            footer = "\n\n*Version Information: `{}` v{}, generated by `lucidoc` v{}*".format(
+                mod.__name__, v, __version__
+            )
+
         def postproc(head, blocks):
             return basic_finish(head, blocks) + lucidoc_footer + footer
 
     if groups:
+
         def prepare_targets(named_targets):
             res = []
             for n, t in named_targets:
@@ -311,12 +362,18 @@ def doc_module(mod, docstr_parser, render_tag,
                     f = get_target_fun(t)
                     f and res.append((n, t, f))
             return res
+
         chunk_groups = {g: [(n, final_targets[n]) for n in ns] for g, ns in groups}
-        grouped_results = {g: build_doc_block(nt_pairs, prepare_targets)
-                           for g, nt_pairs in chunk_groups.items()}
-        return {g: postproc(head=output, blocks=chunks)
-                for g, chunks in grouped_results.items()}
+        grouped_results = {
+            g: build_doc_block(nt_pairs, prepare_targets)
+            for g, nt_pairs in chunk_groups.items()
+        }
+        return {
+            g: postproc(head=output, blocks=chunks)
+            for g, chunks in grouped_results.items()
+        }
     else:
+
         def prepare_targets(named_targets):
             classes, functions = [], []
             for n, t in named_targets:
@@ -325,8 +382,10 @@ def doc_module(mod, docstr_parser, render_tag,
                         functions.append((n, t))
                     elif inspect.isclass(t):
                         classes.append((n, t))
-            return [(n, t, doc_cls) for n, t in classes] + \
-                   [(n, t, doc_fun) for n, t in functions]
+            return [(n, t, doc_cls) for n, t in classes] + [
+                (n, t, doc_fun) for n, t in functions
+            ]
+
         chunks = build_doc_block(final_targets.items(), prepare_targets)
         return postproc(head=output, blocks=chunks)
 
@@ -370,16 +429,20 @@ def doc_class(cls, docstr_parser, render_tag, include_inherited, nested=False):
             block_lines.extend(param_tag_lines)
             block_lines.append("\n")
         if parsed_clsdoc.returns:
-            raise LucidocError("Class docstring has a return value: {}".
-                               format(parsed_clsdoc.returns))
+            raise LucidocError(
+                "Class docstring has a return value: {}".format(parsed_clsdoc.returns)
+            )
         if err_tag_lines:
             block_lines.append(err_header())
             block_lines.extend(err_tag_lines)
             block_lines.append("\n")
         if parsed_clsdoc.examples:
             if not isinstance(parsed_clsdoc.examples, list):
-                raise TypeError("Example lines are {}, not list".
-                                format(type(parsed_clsdoc.examples)))
+                raise TypeError(
+                    "Example lines are {}, not list".format(
+                        type(parsed_clsdoc.examples)
+                    )
+                )
             block_lines.append(exs_header())
             block_lines.extend(parsed_clsdoc.examples)
             block_lines.append("\n")
@@ -388,8 +451,11 @@ def doc_class(cls, docstr_parser, render_tag, include_inherited, nested=False):
 
     # TODO: account for inherited properties, not just methods
     def eligible(o):
-        return pydoc.inspect.isfunction(o) or \
-               pydoc.inspect.ismethod(o) or isinstance(o, property)
+        return (
+            pydoc.inspect.isfunction(o)
+            or pydoc.inspect.ismethod(o)
+            or isinstance(o, property)
+        )
 
     def inherited(f):
         try:
@@ -405,9 +471,12 @@ def doc_class(cls, docstr_parser, render_tag, include_inherited, nested=False):
         return False
 
     if include_inherited:
+
         def use_as_fun(o):
             return eligible(o)
+
     else:
+
         def use_as_fun(o):
             return eligible(o) and (isinstance(o, property) or not inherited(o))
 
@@ -416,26 +485,37 @@ def doc_class(cls, docstr_parser, render_tag, include_inherited, nested=False):
         return _unprotected(name)
 
     func_docs = _proc_objs(
-        root=cls, select=use_as_fun, pred=use_obj,
-        proc=lambda n, f: doc_callable(f, docstr_parser, render_tag, name=n))
+        root=cls,
+        select=use_as_fun,
+        pred=use_obj,
+        proc=lambda n, f: doc_callable(f, docstr_parser, render_tag, name=n),
+    )
     subcls_docs = _proc_objs(
-        root=cls, select=pydoc.inspect.isclass, pred=use_obj,
-        proc=lambda c: doc_class(c, docstr_parser, render_tag,
-                                 include_inherited, nested=True))
+        root=cls,
+        select=pydoc.inspect.isclass,
+        pred=use_obj,
+        proc=lambda c: doc_class(
+            c, docstr_parser, render_tag, include_inherited, nested=True
+        ),
+    )
     return cls_doc + func_docs + subcls_docs
 
 
 def _get_class_docstring(cls):
     if not inspect.isclass(cls):
-        raise TypeError("Attempted to get class docstring for a non-class "
-                        "object: {}".format(cls))
-    init_func = [o for n, o in inspect.getmembers(cls) if
-                 n == "__init__" and inspect.ismethod(o)]
+        raise TypeError(
+            "Attempted to get class docstring for a non-class " "object: {}".format(cls)
+        )
+    init_func = [
+        o for n, o in inspect.getmembers(cls) if n == "__init__" and inspect.ismethod(o)
+    ]
     header_cls_doc = pydoc.inspect.getdoc(cls)
     init_cls_doc = pydoc.inspect.getdoc(init_func)
     if header_cls_doc and init_cls_doc:
-        raise ValueError("Both header docstring and constructor docstring are "
-                         "present for {}".format(cls.__name__))
+        raise ValueError(
+            "Both header docstring and constructor docstring are "
+            "present for {}".format(cls.__name__)
+        )
 
 
 def doc_callable(f, docstr_parser, render_tag, name=None):
@@ -462,14 +542,19 @@ def doc_callable(f, docstr_parser, render_tag, name=None):
         try:
             n = f.__name__
         except AttributeError:
-            raise LucidocError("No name for object of {}; explicitly pass name "
-                               "if documenting a property".format(type(f)))
+            raise LucidocError(
+                "No name for object of {}; explicitly pass name "
+                "if documenting a property".format(type(f))
+            )
 
     _LOGGER.info("Processing function: {}".format(n))
 
     signature = "```python\ndef {}{}\n```\n".format(
-        n, "(self)" if isinstance(f, property) else
-            pydoc.inspect.formatargspec(*args_spec(f)))
+        n,
+        "(self)"
+        if isinstance(f, property)
+        else pydoc.inspect.formatargspec(*args_spec(f)),
+    )
 
     res = [signature]
     ds = pydoc.inspect.getdoc(f)
@@ -497,16 +582,20 @@ def doc_callable(f, docstr_parser, render_tag, name=None):
 
 
 def _determine_retention_strategy(whitelist, blacklist, groups):
-    """ Validate and determine how to implement specification of target seeking behavior. """
-    if (whitelist and (groups or blacklist)) or \
-            (blacklist and (whitelist or groups)) or \
-            (groups and (blacklist or whitelist)):
+    """Validate and determine how to implement specification of target seeking behavior."""
+    if (
+        (whitelist and (groups or blacklist))
+        or (blacklist and (whitelist or groups))
+        or (groups and (blacklist or whitelist))
+    ):
         raise LucidocError("Only one retention strategy may be specified")
     if not whitelist and not blacklist and not groups:
         return lambda _: True
+
     def check(coll):
         if not is_collection_like(coll):
             raise TypeError("Not a collection: {} ({})".format(coll, type(coll)))
+
     if blacklist:
         check(blacklist)
         return lambda n: n not in set(blacklist)
@@ -523,7 +612,8 @@ def _determine_retention_strategy(whitelist, blacklist, groups):
     raise Exception(
         "No implementation case matched arguments for whitelist, blacklist, and "
         "groups for object retention strategy determination. Got {wl}, {bl}, "
-        "{gs}".format(wl=type(whitelist), bl=type(blacklist), gs=type(groups)))
+        "{gs}".format(wl=type(whitelist), bl=type(blacklist), gs=type(groups))
+    )
 
 
 def _get_targets(mod):
@@ -538,11 +628,17 @@ def _get_targets(mod):
     try:
         exports = mod.__all__
     except AttributeError:
-        _LOGGER.debug("No exports declared; grabbing all members from module {}".
-                      format(mod.__name__))
+        _LOGGER.debug(
+            "No exports declared; grabbing all members from module {}".format(
+                mod.__name__
+            )
+        )
         return inspect.getmembers(mod)
-    _LOGGER.debug("Found {} members exported from module {}: {}".
-                  format(len(exports), mod.__name__, ", ".join(exports)))
+    _LOGGER.debug(
+        "Found {} members exported from module {}: {}".format(
+            len(exports), mod.__name__, ", ".join(exports)
+        )
+    )
     objs, missing = [], []
     for name in exports:
         try:
@@ -550,8 +646,9 @@ def _get_targets(mod):
         except AttributeError:
             missing.append(name)
     if missing:
-        raise Exception("Module is missing declared export(s): {}".
-                        format(", ".join(missing)))
+        raise Exception(
+            "Module is missing declared export(s): {}".format(", ".join(missing))
+        )
     return objs
 
 
@@ -576,8 +673,10 @@ def _proc_objs(root, proc, select=None, pred=None):
     elif nargs == 2:
         do = lambda n, o: proc(n, o)
     else:
-        raise ValueError("Processing function should take exactly 1 or 2 "
-                         "arguments, not {}".format(nargs))
+        raise ValueError(
+            "Processing function should take exactly 1 or 2 "
+            "arguments, not {}".format(nargs)
+        )
     todo = [(n, o) for n, o in inspect.getmembers(root, select) if pred(n, o)]
     return list(itertools.chain(*[do(n, o) for n, o in todo]))
 
@@ -595,18 +694,19 @@ def _standardize_groups_type(groups):
     elif isinstance(groups, Iterable) and not isinstance(groups, str):
         return groups
     else:
-        raise TypeError("Groups specification must be mapping or collection of "
-                        "pairs; got {} ({})".format(groups, type(groups)))
+        raise TypeError(
+            "Groups specification must be mapping or collection of "
+            "pairs; got {} ({})".format(groups, type(groups))
+        )
 
 
 def _type_err_message(exp_type, obs_value):
-    """ Create message for TypeError when value doesn't match expectation. """
-    return "Expected {} but got {} ({})".format(
-            exp_type, obs_value, type(obs_value))
+    """Create message for TypeError when value doesn't match expectation."""
+    return "Expected {} but got {} ({})".format(exp_type, obs_value, type(obs_value))
 
 
 def _unprotected(name):
-    """ Determine whether object name suggests its not protected, but include init """
+    """Determine whether object name suggests its not protected, but include init"""
     return name == "__init__" or not name.startswith("_")
 
 
@@ -615,14 +715,23 @@ def _write_docs(fp, doc):
     d = os.path.dirname(fp)
     if d and not os.path.isdir(d):
         os.makedirs(d)
-    with open(fp, 'w') as f:
+    with open(fp, "w") as f:
         f.write(doc)
 
 
-def run_lucidoc(pkg, parse_style, outfile=None, outfolder=None,
-                no_mod_docstr=False, include_inherited=False,
-                whitelist=None, blacklist=None, groups=None, omit_meta=False,
-                **log_kwargs):
+def run_lucidoc(
+    pkg,
+    parse_style,
+    outfile=None,
+    outfolder=None,
+    no_mod_docstr=False,
+    include_inherited=False,
+    whitelist=None,
+    blacklist=None,
+    groups=None,
+    omit_meta=False,
+    **log_kwargs
+):
     """
     Discover docstrings and create package API documentation in Markdown.
 
@@ -662,7 +771,8 @@ def run_lucidoc(pkg, parse_style, outfile=None, outfolder=None,
     if groups and outfile:
         raise LucidocError(
             "Cannot use output file with groups; to control output destination, "
-            "consider output folder and each group names as filename.")
+            "consider output folder and each group names as filename."
+        )
 
     try:
         sys.path.append(os.getcwd())
@@ -670,7 +780,8 @@ def run_lucidoc(pkg, parse_style, outfile=None, outfolder=None,
         pkg_obj = pydoc.safeimport(pkg)
         if pkg_obj is None:
             raise LucidocError(
-                "ERROR -- Documentation target not found: {}".format(pkg))
+                "ERROR -- Documentation target not found: {}".format(pkg)
+            )
     except pydoc.ErrorDuringImport:
         _LOGGER.error("Failed to import '{}'".format(pkg))
         raise
@@ -678,9 +789,15 @@ def run_lucidoc(pkg, parse_style, outfile=None, outfolder=None,
         show_tag = MdTagRenderer()
         parse = get_parser(parse_style)
         doc_res = doc_module(
-            pkg_obj, parse, show_tag, no_mod_docstr=no_mod_docstr,
-            include_inherited=include_inherited, retain=retain, groups=groups,
-            omit_meta=omit_meta)
+            pkg_obj,
+            parse,
+            show_tag,
+            no_mod_docstr=no_mod_docstr,
+            include_inherited=include_inherited,
+            retain=retain,
+            groups=groups,
+            omit_meta=omit_meta,
+        )
         if groups:
             outfolder = expandpath(outfolder or os.getcwd())
             _LOGGER.debug("Base output folder: {}".format(outfolder))
@@ -702,12 +819,15 @@ def run_lucidoc(pkg, parse_style, outfile=None, outfolder=None,
                 _write_docs(os.path.join(outfolder, fn), doc)
             if missing:
                 _LOGGER.warning(
-                    "Missing output for {} group(s): {}".
-                    format(len(missing), ", ".join(missing)))
+                    "Missing output for {} group(s): {}".format(
+                        len(missing), ", ".join(missing)
+                    )
+                )
             if invalid:
                 _LOGGER.warning(
                     "Skipped writing {} group(s) on account of illegal output "
-                    "file extension: {}".format(len(invalid), ", ".join(invalid)))
+                    "file extension: {}".format(len(invalid), ", ".join(invalid))
+                )
             _LOGGER.info("Done.")
         elif outfile:
             _write_docs(outfile, doc_res)
@@ -717,7 +837,7 @@ def run_lucidoc(pkg, parse_style, outfile=None, outfolder=None,
 
 
 def main():
-    """ Main workflow """
+    """Main workflow"""
 
     opts = _parse_args(sys.argv[1:])
 
@@ -728,8 +848,10 @@ def main():
             try:
                 group, name_spec = gspec.split("=")
             except ValueError:
-                raise ValueError("Illegal output groups specification; "
-                                 "please check usage with --help")
+                raise ValueError(
+                    "Illegal output groups specification; "
+                    "please check usage with --help"
+                )
             if group in seen:
                 raise ValueError("Duplicated group name: {}".format(group))
             seen.add(group)
@@ -740,15 +862,19 @@ def main():
     def split_names(arg):
         return arg.split(",") if arg else []
 
-    run_lucidoc(opts.pkgpath, opts.parse,
-                outfile=opts.outfile,
-                outfolder=opts.outfolder,
-                no_mod_docstr=opts.skip_module_docstring,
-                include_inherited=opts.inherited,
-                whitelist=split_names(opts.whitelist),
-                blacklist=split_names(opts.blacklist),
-                groups=groups, omit_meta=opts.omit_meta)
-    
+    run_lucidoc(
+        opts.pkgpath,
+        opts.parse,
+        outfile=opts.outfile,
+        outfolder=opts.outfolder,
+        no_mod_docstr=opts.skip_module_docstring,
+        include_inherited=opts.inherited,
+        whitelist=split_names(opts.whitelist),
+        blacklist=split_names(opts.blacklist),
+        groups=groups,
+        omit_meta=opts.omit_meta,
+    )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
