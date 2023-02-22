@@ -10,7 +10,8 @@ __all__ = ["DocstringStyler", "PycodeDocstringStyler", "get_styler"]
 
 
 class DocstringStyler(object):
-    """ How to style/render docstrings """
+    """How to style/render docstrings"""
+
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
@@ -19,7 +20,7 @@ class DocstringStyler(object):
 
 
 class PlainDocstringStyler(DocstringStyler):
-    """ Style/render docstring by simply echoing it. """
+    """Style/render docstring by simply echoing it."""
 
     def __call__(self, ds):
         """
@@ -34,7 +35,7 @@ class PlainDocstringStyler(DocstringStyler):
 
 
 class PycodeDocstringStyler(DocstringStyler):
-    """ Style/render docstring by wrapping it in Python code block fences. """
+    """Style/render docstring by wrapping it in Python code block fences."""
 
     def __call__(self, ds):
         """
@@ -50,14 +51,11 @@ class PycodeDocstringStyler(DocstringStyler):
 
 PLAIN_KEY = "plain"
 PYCODE_KEY = "pycode"
-STYLERS = {
-    PLAIN_KEY: PlainDocstringStyler(),
-    PYCODE_KEY: PycodeDocstringStyler()
-}
+STYLERS = {PLAIN_KEY: PlainDocstringStyler(), PYCODE_KEY: PycodeDocstringStyler()}
 
 
 class UnknownStylerError(LucidocError):
-    """ Exception for request of unsupported styling strategy. """
+    """Exception for request of unsupported styling strategy."""
 
     def __init__(self, name):
         """

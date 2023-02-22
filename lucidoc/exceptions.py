@@ -5,5 +5,6 @@ __email__ = "vreuter@virginia.edu"
 
 
 class LucidocError(Exception):
-    """ Base error type for this package """
+    """Base error type for this package"""
+
     pass
