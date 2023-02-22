@@ -7,7 +7,6 @@ import sys
 PACKAGE = "lucidoc"
 REQDIR = "requirements"
 
-
 def read_reqs(reqs_name):
     with open(os.path.join(REQDIR, "requirements-{}.txt".format(reqs_name)), "r") as f:
         return [l.strip() for l in f if l.strip()]
@@ -36,9 +35,10 @@ setup(
     classifiers=[
         "Development Status :: 4 - Beta",
         "License :: OSI Approved :: BSD License",
-        "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3.5",
-        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
     ],
     keywords="documentation, API, docs, mkdocs, autodoc",
     url="https://github.com/databio/{}/".format(PACKAGE),
