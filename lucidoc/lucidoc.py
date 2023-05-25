@@ -30,7 +30,7 @@ else:
     from collections.abc import Mapping
     from collections.abc import Iterable
 
-from logmuse import setup_logger
+from logmuse import init_logger
 
 from .helpers import *
 from .docparse import get_parser, RST_KEY
@@ -553,8 +553,9 @@ def doc_callable(f, docstr_parser, render_tag, name=None):
         n,
         "(self)"
         if isinstance(f, property)
-        else pydoc.inspect.formatargspec(*args_spec(f)),
+        else pydoc.inspect.signature(f),
     )
+    # else pydoc.inspect.signature(*args_spec(f)),
 
     res = [signature]
     ds = pydoc.inspect.getdoc(f)
@@ -760,7 +761,7 @@ def run_lucidoc(
     """
 
     global _LOGGER
-    _LOGGER = setup_logger(**log_kwargs)
+    _LOGGER = init_logger("lucidoc")
 
     if outfile and outfolder:
         raise LucidocError("Cannot specify both output file and output folder")
