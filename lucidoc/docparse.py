@@ -219,7 +219,7 @@ class RstDocstringParser(DocstringParser):
 
         tags = [self._get_tag(chunk) for chunk in raw_tag_blocks]
 
-        par, ret, err = [], [], []
+        par, ret, err, doc = [], [], [], []
         for t in tags:
             if isinstance(t, ParTag):
                 par.append(t)
@@ -227,6 +227,8 @@ class RstDocstringParser(DocstringParser):
                 ret.append(t)
             elif isinstance(t, ErrTag):
                 err.append(t)
+            elif isinstance(t, DocTag):
+                doc.append(t)
             else:
                 raise TypeError("Unrecognized doc tag type: {}".format(type(t)))
 
@@ -248,7 +250,8 @@ class RstDocstringParser(DocstringParser):
         elif line.startswith(":raise") or line.startswith(":raises"):
             tt = ErrTag
         else:
-            raise LucidocError("Invalid tag declaration start: " + line)
+            tt = DocTag
+            # raise LucidocError("Invalid tag declaration start: " + line)
         colon_chunks = line.split(":")
         left_parts, desc = colon_chunks[1:-1], colon_chunks[-1]
         if issubclass(tt, ParTag):
